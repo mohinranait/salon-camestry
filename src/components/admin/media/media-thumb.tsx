@@ -1,17 +1,18 @@
 'use client';
 
 import { FileText, Play } from 'lucide-react';
+import { cloudinaryTransform, cloudinaryVideoPoster } from '@/lib/cloudinary-url';
 import { cn } from '@/lib/utils';
 import type { MediaInfo } from '@/lib/types';
 
-export function MediaThumb({ media, className, alt = '' }: { media?: MediaInfo | null; className?: string; alt?: string }) {
+export function MediaThumb({ media, className, alt = '', size = 480 }: { media?: MediaInfo | null; className?: string; alt?: string; size?: number }) {
   if (!media) {
     return <div className={cn('flex items-center justify-center bg-muted text-xs text-muted-foreground', className)}>Missing file</div>;
   }
   if (media.kind === 'video') {
     return (
       <div className={cn('relative overflow-hidden bg-black', className)}>
-        <video src={`${media.url}#t=0.5`} muted preload="metadata" className="size-full object-cover" />
+        <video src={media.url} poster={cloudinaryVideoPoster(media.url, `so_1,c_fill,w_${size},h_${size},q_auto`)} muted preload="none" className="size-full object-cover" />
         <span className="absolute right-1.5 bottom-1.5 flex size-6 items-center justify-center rounded-full bg-black/70 text-white">
           <Play className="size-3 fill-current" />
         </span>
@@ -29,7 +30,8 @@ export function MediaThumb({ media, className, alt = '' }: { media?: MediaInfo |
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={media.url}
+      // A small Cloudinary rendition keeps the library grid fast.
+      src={media.mimeType === 'image/svg+xml' ? media.url : cloudinaryTransform(media.url, `c_limit,w_${size},q_auto,f_auto`)}
       alt={alt}
       loading="lazy"
       className={cn('bg-muted object-cover', className)}

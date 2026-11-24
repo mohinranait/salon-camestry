@@ -116,7 +116,7 @@ export function PageEditor({ initial }: { initial: PageDoc }) {
           <h1 className="text-2xl font-semibold tracking-tight">{page.title || 'Untitled page'}</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" render={<a href={href} target="_blank" rel="noreferrer" />}>
+          <Button nativeButton={false} variant="outline" render={<a href={href} target="_blank" rel="noreferrer" />}>
             <ExternalLink /> View
           </Button>
           <Button onClick={save} disabled={pending || !dirty}>

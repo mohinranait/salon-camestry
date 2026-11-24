@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import type { LinkValue, ResolvedMediaRef, SectionTheme } from '@/lib/types';
 import type { SiteSettings } from '@/lib/settings';
 import { primaryCta } from '@/lib/settings';
+import { cloudinaryVideoPoster } from '@/lib/cloudinary-url';
 
 export const str = (v: unknown) => (typeof v === 'string' ? v : '');
 export const arr = <T,>(v: unknown) => (Array.isArray(v) ? (v as T[]) : []);
@@ -138,10 +139,23 @@ export function ButtonLink({
 }
 
 /** The CTA a section shows: either the site-wide phase CTA or its own link. */
+const filled = (link: unknown): link is LinkValue =>
+  Boolean(link && typeof link === 'object' && (link as LinkValue).label && (link as LinkValue).href);
+
+/**
+ * The CTA a section shows: the site-wide phase CTA, or its own button. After
+ * launch a custom button that still points at the waitlist switches to the
+ * Phase 2 button (or the section's own Phase 2 override), so no section keeps
+ * collecting waitlist leads once tours are open.
+ */
 export function sectionCta(data: Record<string, unknown>, settings: SiteSettings): LinkValue | null {
   if (data.useSiteCta) return primaryCta(settings);
-  const cta = data.cta as LinkValue | undefined;
-  return cta?.label && cta.href ? cta : null;
+  const cta = filled(data.cta) ? data.cta : null;
+  if (settings.phase.current === 'phase2') {
+    if (filled(data.phase2Cta)) return data.phase2Cta;
+    if (cta && /waitlist|founding-members/i.test(cta.href)) return settings.phase.phase2Cta;
+  }
+  return cta;
 }
 
 export function SiteMedia({
@@ -166,6 +180,7 @@ export function SiteMedia({
     return (
       <video
         src={m.url}
+        poster={cloudinaryVideoPoster(m.url, 'so_0,q_auto,f_jpg')}
         className={cn(fill && 'absolute inset-0 size-full', 'object-cover', className)}
         aria-label={value.alt || undefined}
         {...(background ? { autoPlay: true, muted: true, loop: true, playsInline: true } : { controls: true, playsInline: true, preload: 'metadata' })}

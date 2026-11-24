@@ -1,4 +1,5 @@
 import 'server-only';
+import { unstable_cache } from 'next/cache';
 import { cache } from 'react';
 import { db } from '@/prisma/db';
 import { DEFAULT_SETTINGS, mergeSettings, type SiteSettings } from '@/lib/settings';
@@ -15,6 +16,19 @@ import type {
 
 export const SETTINGS_KEY = 'site';
 
+/**
+ * Every public read is kept in the Next.js data cache under this tag, so pages
+ * render without touching the database. Admin saves expire the tag (see
+ * `expireSiteCache`), and the hourly revalidate covers edits made outside the
+ * admin panel, such as the seed script.
+ */
+export const CONTENT_TAG = 'site-content';
+
+function cachedRead<A extends unknown[], R>(fn: (...args: A) => Promise<R>, key: string) {
+  // React's cache() dedupes within one request; unstable_cache shares results across requests.
+  return cache(unstable_cache(fn, [key], { tags: [CONTENT_TAG], revalidate: 3600 }));
+}
+
 const iso = (d: unknown) => (d ? new Date(d as string).toISOString() : '');
 
 /** Raw settings as stored (media unresolved) — what the admin form edits. */
@@ -24,11 +38,14 @@ export async function getRawSettings(): Promise<SiteSettings> {
 }
 
 /** Settings for rendering the site, with media resolved and secrets removed. */
-export const getSettings = cache(async (): Promise<SiteSettings> => {
+export const getSettings = cachedRead(async (): Promise<SiteSettings> => {
   const settings = await getRawSettings();
   // The Instagram token is only read server-side by the feed section.
   return resolveMedia({ ...settings, instagram: { accessToken: '' } });
-});
+}, 'settings');
+
+/** The Instagram token, kept out of the settings sent to pages. */
+export const getInstagramToken = cachedRead(async () => (await getRawSettings()).instagram.accessToken, 'instagram-token');
 
 type PageRow = Awaited<ReturnType<typeof db.orm.pages.create>>;
 
@@ -49,16 +66,16 @@ export function toPageDoc(row: PageRow): PageDoc {
   };
 }
 
-export const getPageBySlug = cache(async (slug: string): Promise<PageDoc | null> => {
+export const getPageBySlug = cachedRead(async (slug: string): Promise<PageDoc | null> => {
   const row = await db.orm.pages.where({ slug }).first();
   if (!row) return null;
   return resolveMedia(toPageDoc(row));
-});
+}, 'page');
 
-export async function listPages(): Promise<PageDoc[]> {
+export const listPages = cachedRead(async (): Promise<PageDoc[]> => {
   const rows = await db.orm.pages.orderBy({ order: 1 }).all();
   return rows.map(toPageDoc);
-}
+}, 'pages');
 
 type MilestoneRow = Awaited<ReturnType<typeof db.orm.milestones.create>>;
 export function toMilestoneDoc(row: MilestoneRow): MilestoneDoc {
@@ -73,10 +90,10 @@ export function toMilestoneDoc(row: MilestoneRow): MilestoneDoc {
   };
 }
 
-export const getMilestones = cache(async (): Promise<MilestoneDoc[]> => {
+export const getMilestones = cachedRead(async (): Promise<MilestoneDoc[]> => {
   const rows = await db.orm.milestones.orderBy({ order: 1 }).all();
   return resolveMedia(rows.map(toMilestoneDoc));
-});
+}, 'milestones');
 
 type SuiteRow = Awaited<ReturnType<typeof db.orm.suites.create>>;
 export function toSuiteDoc(row: SuiteRow): SuiteDoc {
@@ -99,11 +116,11 @@ export function toSuiteDoc(row: SuiteRow): SuiteDoc {
   };
 }
 
-export const getSuites = cache(async (publishedOnly = true): Promise<SuiteDoc[]> => {
+export const getSuites = cachedRead(async (publishedOnly: boolean = true): Promise<SuiteDoc[]> => {
   const query = publishedOnly ? db.orm.suites.where({ published: true }) : db.orm.suites;
   const rows = await query.orderBy({ order: 1 }).all();
   return resolveMedia(rows.map(toSuiteDoc));
-});
+}, 'suites');
 
 type MemberRow = Awaited<ReturnType<typeof db.orm.members.create>>;
 export function toMemberDoc(row: MemberRow): MemberDoc {
@@ -123,11 +140,11 @@ export function toMemberDoc(row: MemberRow): MemberDoc {
   };
 }
 
-export const getMembers = cache(async (publishedOnly = true): Promise<MemberDoc[]> => {
+export const getMembers = cachedRead(async (publishedOnly: boolean = true): Promise<MemberDoc[]> => {
   const query = publishedOnly ? db.orm.members.where({ published: true }) : db.orm.members;
   const rows = await query.orderBy({ order: 1 }).all();
   return resolveMedia(rows.map(toMemberDoc));
-});
+}, 'members');
 
 type LeadRow = Awaited<ReturnType<typeof db.orm.leads.create>>;
 export function toLeadDoc(row: LeadRow): LeadDoc {

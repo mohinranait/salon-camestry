@@ -1,11 +1,16 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { Sparkles } from 'lucide-react';
+import { getSession } from '@/lib/server/auth';
 import { LoginForm } from './login-form';
 
 export const metadata: Metadata = { title: 'Sign in · Shear Chemistry Admin', robots: { index: false } };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const { next } = await searchParams;
+  const target = next?.startsWith('/admin') ? next : '/admin';
+  // getSession also checks the account still exists, so a stale cookie lands here instead of looping.
+  if (await getSession()) redirect(target);
   return (
     <main className="grid min-h-screen bg-[#0d0d0d] lg:grid-cols-2">
       <div className="relative hidden overflow-hidden lg:block">
@@ -28,7 +33,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <h1 className="text-2xl font-semibold">Sign in to the admin panel</h1>
             <p className="text-sm text-muted-foreground">Use the email and password for your admin account.</p>
           </div>
-          <LoginForm next={next ?? '/admin'} />
+          <LoginForm next={target} />
         </div>
       </div>
     </main>

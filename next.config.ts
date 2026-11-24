@@ -3,9 +3,15 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: ["mongoose", "sharp"],
   images: {
-    // Media is served from MongoDB GridFS through /api/media/:id
-    localPatterns: [{ pathname: "/api/media/**" }],
-    formats: ["image/avif", "image/webp"],
+    // Media lives in Cloudinary, which resizes and converts images at its CDN.
+    loader: "custom",
+    loaderFile: "./src/lib/image-loader.ts",
+  },
+  async redirects() {
+    return [
+      { source: '/login', destination: '/admin/login', permanent: false },
+      { source: '/admin/signin', destination: '/admin/login', permanent: false },
+    ];
   },
   turbopack: {
     rules: {

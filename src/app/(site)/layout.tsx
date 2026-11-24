@@ -1,30 +1,29 @@
 import type { Metadata } from 'next';
+import { connection } from 'next/server';
 import { RevealObserver, StickyCta } from '@/components/site/chrome';
 import { SiteFooter } from '@/components/site/footer';
 import { SmartLink } from '@/components/site/primitives';
 import { getSettings } from '@/lib/server/data';
-import { isPhaseVisible, primaryCta } from '@/lib/settings';
-import type { ResolvedMediaRef } from '@/lib/types';
+import { currentAnnouncement, primaryCta } from '@/lib/settings';
 
-export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
-  const favicon = (settings.general.favicon as ResolvedMediaRef | null)?.media?.url;
   return {
     title: { default: settings.seo.defaultTitle, template: settings.seo.titleTemplate },
     description: settings.seo.defaultDescription,
     applicationName: settings.general.siteName,
-    icons: favicon ? { icon: favicon, apple: favicon } : undefined,
     verification: settings.seo.googleVerification ? { google: settings.seo.googleVerification } : undefined,
     formatDetection: { telephone: true, address: true, email: true },
   };
 }
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
+  // Rendered per request (phase, previews), but data comes from the cache, not the database.
+  await connection();
   const settings = await getSettings();
-  const { brand, announcement } = settings;
-  const showBanner = announcement.enabled && announcement.text && isPhaseVisible(announcement.phase, settings.phase.current);
+  const { brand } = settings;
+  const announcement = currentAnnouncement(settings);
   const css = `:root{--sc-gold:${brand.gold};--sc-gold-light:${brand.goldLight};--sc-black:${brand.black};--sc-ivory:${brand.ivory};--sc-charcoal:${brand.charcoal};}`;
 
   return (
@@ -33,7 +32,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <a href="#main" className="sr-only z-[70] bg-sc-gold px-4 py-2 text-sc-black focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
         Skip to content
       </a>
-      {showBanner && (
+      {announcement && (
         <div className="relative z-50 bg-sc-black text-center text-[11px] font-semibold tracking-[0.18em] text-sc-gold uppercase sm:text-xs">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2.5">
             <span>{announcement.text}</span>

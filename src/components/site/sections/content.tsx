@@ -1,7 +1,7 @@
 import { Instagram } from '@/components/brand-icons';
 import { RichText } from '@/components/rich-text';
 import { DynamicIcon } from '@/components/icon';
-import { getRawSettings, getSuites } from '@/lib/server/data';
+import { getInstagramToken, getSuites } from '@/lib/server/data';
 import type { ResolvedMediaRef } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { arr, ButtonLink, media, sectionCta, SectionIntro, SectionShell, SiteMedia, str } from '../primitives';
@@ -113,10 +113,10 @@ async function liveInstagram(token: string, limit: number): Promise<InstaPost[] 
 export async function InstagramSection({ section, settings }: SectionProps) {
   const d = section.data;
   const limit = Math.min(12, Math.max(3, Number(d.limit ?? 6)));
-  const raw = await getRawSettings();
+  const token = await getInstagramToken();
   const handle = settings.social.instagramHandle;
   const profile = settings.social.instagramUrl || `https://instagram.com/${handle}`;
-  const live = raw.instagram.accessToken ? await liveInstagram(raw.instagram.accessToken, limit) : null;
+  const live = token ? await liveInstagram(token, limit) : null;
   const fallback = arr<{ image: ResolvedMediaRef | null; caption: string; href: string }>(d.posts).filter((p) => p.image?.media).slice(0, limit);
 
   return (
@@ -211,7 +211,7 @@ export function FaqSection({ section }: SectionProps) {
   const items = arr<{ category: string; question: string; answer: string }>(d.items).filter((i) => i.question);
   return (
     <SectionShell theme={section.theme} anchor={section.anchor}>
-      <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+      <div className="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         <SectionIntro eyebrow={str(d.eyebrow)} heading={str(d.heading)} intro={<RichText text={d.intro} />} className="lg:sticky lg:top-28 lg:self-start" />
         <FaqClient items={items} />
       </div>

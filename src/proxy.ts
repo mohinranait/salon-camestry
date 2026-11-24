@@ -12,10 +12,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (pathname === '/admin/login') {
-    if (session) return NextResponse.redirect(new URL('/admin', request.url));
-    return NextResponse.next();
-  }
+  // The login page itself decides whether to skip ahead: a token can be valid
+  // while its account no longer exists, and bouncing it here would loop.
+  if (pathname === '/admin/login') return NextResponse.next();
 
   if (!session) {
     const url = new URL('/admin/login', request.url);

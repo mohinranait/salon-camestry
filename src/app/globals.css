@@ -168,6 +168,14 @@
   transform: none;
 }
 
+/* The first block is above the fold: show it immediately so the headline and
+   hero image paint without waiting for JavaScript (better LCP). */
+main > section:first-of-type .reveal {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal {
     opacity: 1;

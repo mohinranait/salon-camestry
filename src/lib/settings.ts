@@ -29,10 +29,14 @@ export type SiteSettings = {
   };
   announcement: {
     enabled: boolean;
-    phase: PhaseRule;
+    /** Phase 1 (pre-launch) message. */
     text: string;
     linkLabel: string;
     linkHref: string;
+    /** Phase 2 (launch) message; empty hides the bar after launch. */
+    phase2Text: string;
+    phase2LinkLabel: string;
+    phase2LinkHref: string;
   };
   navigation: {
     header: NavItem[];
@@ -119,10 +123,12 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   },
   announcement: {
     enabled: true,
-    phase: 'all',
     text: 'Coming May 2027 to Moreland Ave • Now Accepting Founding Member Inquiries',
     linkLabel: 'Join the list',
     linkHref: '/founding-members#waitlist',
+    phase2Text: 'Now Open on Moreland Ave • Private Suite Tours Available',
+    phase2LinkLabel: 'Book a tour',
+    phase2LinkHref: '/book-a-tour',
   },
   navigation: {
     header: [
@@ -149,10 +155,10 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   },
   instagram: { accessToken: '' },
   seo: {
-    titleTemplate: '%s | Shear Chemistry Salon Suites',
-    defaultTitle: 'Shear Chemistry Salon Suites | Luxury Salon Suites in Southeast Atlanta',
+    titleTemplate: '%s | Shear Chemistry',
+    defaultTitle: 'Luxury Salon Suites in Southeast Atlanta | Shear Chemistry',
     defaultDescription:
-      'Upscale, turnkey salon suites for rent on Moreland Avenue in Southeast Atlanta. 20 private wet and dry suites, 24/7 access, shared wash & dry lounge. Opening May 2027.',
+      'Upscale turnkey salon suites for rent on Moreland Ave in Southeast Atlanta. 20 private wet & dry suites, 24/7 access, wash & dry lounge. Opening May 2027.',
     keywords:
       'salon suites Atlanta, salon suites for rent Atlanta, Southeast Atlanta salon suites, Moreland Avenue salon, beauty suites East Atlanta, salon studio rental',
     ogImage: null,
@@ -261,6 +267,16 @@ export function mergeSettings<T>(defaults: T, stored: unknown): T {
 
 export function isPhaseVisible(rule: PhaseRule | undefined, phase: Phase) {
   return !rule || rule === 'all' || rule === phase;
+}
+
+/** The announcement bar for the current phase, or null when it is hidden. */
+export function currentAnnouncement(settings: SiteSettings) {
+  const a = settings.announcement;
+  if (!a.enabled) return null;
+  const launch = settings.phase.current === 'phase2';
+  const text = launch ? a.phase2Text : a.text;
+  if (!text) return null;
+  return { text, linkLabel: launch ? a.phase2LinkLabel : a.linkLabel, linkHref: launch ? a.phase2LinkHref : a.linkHref };
 }
 
 export function primaryCta(settings: SiteSettings): LinkValue {

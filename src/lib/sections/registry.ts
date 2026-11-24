@@ -19,6 +19,12 @@ const ctaFields: Field[] = [
     help: 'Follows the launch phase: "Join VIP Waitlist" in Phase 1, "Book a Tour" in Phase 2.',
   },
   { type: 'link', name: 'cta', label: 'Custom button', help: 'Used when the site-wide CTA is off' },
+  {
+    type: 'link',
+    name: 'phase2Cta',
+    label: 'Custom button after launch (optional)',
+    help: 'Shown in Phase 2 instead of the custom button. If empty, a custom button that links to the waitlist switches to the site-wide "Book a Tour" button.',
+  },
 ];
 
 export const SECTIONS: SectionDefinition[] = [

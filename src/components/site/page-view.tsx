@@ -31,6 +31,8 @@ export function PageView({ page, settings, preview = false }: { page: PageDoc; s
         overlay={overlay}
       />
       <main id="main" className="flex-1">
+        {/* Every page needs one h1; hero and page header sections provide it, otherwise the page title does. */}
+        {!(first && ['hero', 'pageHeader'].includes(first.type)) && <h1 className="sr-only">{page.title}</h1>}
         <SectionRenderer sections={sections} settings={settings} />
       </main>
       {page.slug === 'home' && <JsonLd data={localBusinessJsonLd(settings)} />}

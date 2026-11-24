@@ -78,7 +78,7 @@ export function LeadsTable({ leads }: { leads: LeadDoc[] }) {
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone, specialty" className="bg-background pl-8" />
         </div>
         {/* A file download from an API route, not a page navigation. */}
-        <Button variant="outline" className="ml-auto" render={<a href="/api/admin/leads/export" download />}>
+        <Button nativeButton={false} variant="outline" className="ml-auto" render={<a href="/api/admin/leads/export" download />}>
           <Download /> Export CSV
         </Button>
       </div>
@@ -130,8 +130,8 @@ export function LeadsTable({ leads }: { leads: LeadDoc[] }) {
               </SheetHeader>
               <div className="space-y-5 px-4 pb-6">
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" render={<a href={`mailto:${active.email}`} />}><Mail /> Email</Button>
-                  <Button variant="outline" size="sm" render={<a href={`tel:${active.phone}`} />}><Phone /> Call</Button>
+                  <Button nativeButton={false} variant="outline" size="sm" render={<a href={`mailto:${active.email}`} />}><Mail /> Email</Button>
+                  <Button nativeButton={false} variant="outline" size="sm" render={<a href={`tel:${active.phone}`} />}><Phone /> Call</Button>
                 </div>
                 <dl className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-2 text-sm">
                   <dt className="text-muted-foreground">Email</dt><dd className="break-all">{active.email}</dd>

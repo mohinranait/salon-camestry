@@ -83,7 +83,7 @@ export async function MilestonesSection({ section, settings }: SectionProps) {
   const progress = buildProgress(milestones);
   return (
     <SectionShell theme={section.theme} anchor={section.anchor}>
-      <div className="grid gap-16 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="grid gap-16 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <div className="lg:sticky lg:top-28 lg:self-start">
           <SectionIntro eyebrow={str(d.eyebrow)} heading={str(d.heading)} intro={<RichText text={d.intro} />} className="mb-10" />
           {d.showGauge !== false && <EvolutionGauge progress={progress} milestones={milestones} label={`To ${settings.phase.openingLabel} opening`} />}

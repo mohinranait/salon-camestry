@@ -22,14 +22,10 @@ model AdminUser {
 
 model Media {
   id           ObjectId @id @map("_id")
-  // "cloudinary" or "database" (GridFS). Missing on files stored before Cloudinary support.
-  provider     String?
-  // Cloudinary asset details; empty for files in GridFS.
-  publicId     String?
-  resourceType String?
-  url          String?
-  // GridFS file id; empty for Cloudinary files.
-  fileId       String
+  // Files live in Cloudinary; these identify the asset there.
+  publicId     String
+  resourceType String
+  url          String
   filename     String
   originalName String
   mimeType     String
@@ -43,6 +39,10 @@ model Media {
   tags         String[]
   createdAt    DateTime @onCreate(now())
   updatedAt    DateTime @onCreate(now()) @onUpdate(now())
+  // Library grid: newest first, optionally filtered by kind or tag.
+  @@index([createdAt])
+  @@index([kind, createdAt])
+  @@index([tags])
   @@map("media")
 }
 
@@ -60,6 +60,7 @@ model Page {
   order          Int
   createdAt      DateTime  @onCreate(now())
   updatedAt      DateTime  @onCreate(now()) @onUpdate(now())
+  @@index([order])
   @@map("pages")
 }
 
@@ -81,6 +82,7 @@ model Milestone {
   order      Int
   createdAt  DateTime   @onCreate(now())
   updatedAt  DateTime   @onCreate(now()) @onUpdate(now())
+  @@index([order])
   @@map("milestones")
 }
 
@@ -102,6 +104,8 @@ model Suite {
   order       Int
   createdAt   DateTime   @onCreate(now())
   updatedAt   DateTime   @onCreate(now()) @onUpdate(now())
+  // Public list: published suites in display order.
+  @@index([published, order])
   @@map("suites")
 }
 
@@ -120,6 +124,8 @@ model Member {
   order        Int
   createdAt    DateTime  @onCreate(now())
   updatedAt    DateTime  @onCreate(now()) @onUpdate(now())
+  // Directory: published pros in display order.
+  @@index([published, order])
   @@map("members")
 }
 
@@ -138,6 +144,9 @@ model Lead {
   emailStatus String
   createdAt   DateTime @onCreate(now())
   updatedAt   DateTime @onCreate(now()) @onUpdate(now())
+  // Inbox newest first, and the "new leads" badge count.
+  @@index([createdAt])
+  @@index([status])
   @@map("leads")
 }
 
@@ -154,6 +163,9 @@ model Booking {
   emailStatus String
   createdAt   DateTime @onCreate(now())
   updatedAt   DateTime @onCreate(now()) @onUpdate(now())
+  // Slot availability looks up a day; the badge counts pending requests.
+  @@index([date, time])
+  @@index([status])
   @@map("bookings")
 }
 

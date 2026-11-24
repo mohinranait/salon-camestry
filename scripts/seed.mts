@@ -2,46 +2,54 @@
  * Seeds the database with sample content, generated placeholder images and an admin account.
  *
  *   pnpm seed            # refuses to run when pages already exist
- *   pnpm seed --reset    # wipes site content (not admin users) and seeds again
+ *   pnpm seed --reset    # rebuilds pages, settings and collections with fresh sample images.
+ *                        # Keeps admin users, the Cloudinary connection, files you uploaded,
+ *                        # and leads/bookings (add --include-inbox to wipe those too).
  *
  * Reads DATABASE_URL, ADMIN_EMAIL, ADMIN_PASSWORD and ADMIN_NAME from .env.
+ * Images are uploaded to the Cloudinary account saved in Admin → Cloudinary.
  */
 import 'dotenv/config';
 import { randomBytes, randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
-import { GridFSBucket } from 'mongodb';
 import sharp from 'sharp';
 import { closeDb, db, mongoDriver } from '../src/prisma/db';
+import { CLOUDINARY_SETTINGS_KEY, deleteFromCloudinary, parseStoredConfig, toCredentials, uploadToCloudinary } from '../src/lib/cloudinary';
 import { DEFAULT_SETTINGS } from '../src/lib/settings';
 import { buildPhoto, favicon, floorPlan, headshot, heroRendering, moodBoard, ogImage, render, suiteImage, type BuildScene } from './seed-assets.mts';
 
 const reset = process.argv.includes('--reset');
-const bucket = new GridFSBucket(mongoDriver(), { bucketName: 'media_files' });
+const includeInbox = process.argv.includes('--include-inbox');
+const SAMPLE_TAG = 'sample';
+
+async function cloudinaryCredentials() {
+  const row = await db.orm.settings.where({ key: CLOUDINARY_SETTINGS_KEY }).first();
+  return toCredentials(parseStoredConfig(row?.data));
+}
+type Credentials = NonNullable<Awaited<ReturnType<typeof cloudinaryCredentials>>>;
+let credentials: Credentials;
 
 type Ref = { mediaId: string; alt: string };
 
 async function upload(buffer: Buffer, originalName: string, mimeType: string, title: string, alt: string, tags: string[]) {
-  const meta = await sharp(buffer).metadata();
   const blur = await sharp(buffer).resize(16, 16, { fit: 'inside' }).webp({ quality: 40 }).toBuffer();
-  const stream = bucket.openUploadStream(originalName, { metadata: { contentType: mimeType } });
-  await new Promise<void>((resolve, reject) => {
-    stream.once('finish', () => resolve());
-    stream.once('error', reject);
-    stream.end(buffer);
-  });
+  const uploaded = await uploadToCloudinary(credentials, buffer, { filename: originalName, mimeType });
   const row = await db.orm.media.create({
-    fileId: stream.id.toString(),
+    publicId: uploaded.public_id,
+    resourceType: uploaded.resource_type,
+    url: uploaded.secure_url,
     filename: originalName,
     originalName,
     mimeType,
     kind: 'image',
-    size: buffer.length,
-    width: meta.width ?? null,
-    height: meta.height ?? null,
+    size: uploaded.bytes ?? buffer.length,
+    width: uploaded.width ?? null,
+    height: uploaded.height ?? null,
     blurDataUrl: `data:image/webp;base64,${blur.toString('base64')}`,
     title,
     defaultAlt: alt,
-    tags,
+    // Marks generated files so a reset removes them and nothing the owner uploaded.
+    tags: [...tags, SAMPLE_TAG],
   });
   process.stdout.write('.');
   return { id: row.id, ref: (placementAlt = alt): Ref => ({ mediaId: row.id, alt: placementAlt }) };
@@ -66,12 +74,28 @@ async function main() {
     process.exit(1);
   }
 
+  const found = await cloudinaryCredentials();
+  if (!found) {
+    console.error('Cloudinary is not connected. Sign in to /admin, open Cloudinary, save your credentials, then run the seed again.');
+    process.exit(1);
+  }
+  credentials = found;
+
   if (reset) {
     console.log('Wiping site content…');
     const raw = mongoDriver();
-    for (const name of ['media', 'pages', 'settings', 'milestones', 'suites', 'members', 'leads', 'bookings', 'media_files.files', 'media_files.chunks']) {
+    // Only generated sample files go, in Cloudinary and the library; uploads are kept.
+    const samples = await raw.collection('media').find({ tags: SAMPLE_TAG }, { projection: { publicId: 1, resourceType: 1 } }).toArray();
+    for (const m of samples) {
+      await deleteFromCloudinary(credentials, String(m.publicId), String(m.resourceType)).catch(() => undefined);
+    }
+    await raw.collection('media').deleteMany({ tags: SAMPLE_TAG });
+    const collections = ['pages', 'milestones', 'suites', 'members', ...(includeInbox ? ['leads', 'bookings'] : [])];
+    for (const name of collections) {
       await raw.collection(name).deleteMany({});
     }
+    // Keep the Cloudinary connection; only the site settings are reseeded.
+    await raw.collection('settings').deleteMany({ key: 'site' });
   }
 
   /* ------------------------------ Admin user ----------------------------- */
@@ -126,8 +150,8 @@ async function main() {
     {
       slug: 'home',
       title: 'Home',
-      seoTitle: 'Luxury Salon Suites for Rent in Southeast Atlanta | Shear Chemistry',
-      seoDescription: 'Upscale, turnkey salon suites on Moreland Avenue in Southeast Atlanta. 20 private wet and dry suites, 24/7 smart-lock access and a shared wash & dry lounge. Opening May 2027.',
+      seoTitle: 'Luxury Salon Suites in Southeast Atlanta | Shear Chemistry',
+      seoDescription: 'Upscale turnkey salon suites for rent on Moreland Ave in Southeast Atlanta. 20 private wet & dry suites, 24/7 access, wash & dry lounge. Opening May 2027.',
       sections: [
         section('hero', {
           eyebrow: 'Coming May 2027 · Moreland Avenue, Atlanta',
@@ -206,7 +230,7 @@ async function main() {
     {
       slug: 'suites',
       title: 'The Suites',
-      seoTitle: 'Salon Suites for Rent in Atlanta | Single & Double, Wet & Dry',
+      seoTitle: 'Salon Suites for Rent in Atlanta',
       seoDescription: 'Explore 20 turnkey salon suites in Southeast Atlanta: single and double, wet and dry. Styling chair, mirror and cabinetry included. See the floor plan.',
       sections: [
         section('pageHeader', { eyebrow: 'The Suites', heading: 'Twenty suites. Four formulas. One you.', intro: 'Choose single or double, wet or dry. Every suite arrives turnkey and neutral, ready for you to customize.', background: suitesImg.doubleWet.ref() }, { theme: 'dark' }),
@@ -238,7 +262,7 @@ async function main() {
     {
       slug: 'build-out',
       title: 'The Build-Out',
-      seoTitle: 'The Build-Out: Construction Progress Journal',
+      seoTitle: 'Build-Out Progress Journal',
       seoDescription: 'Follow the build-out of Shear Chemistry Salon Suites on Moreland Avenue, from permits and framing to custom finishes and our May 2027 grand opening.',
       sections: [
         section('pageHeader', { eyebrow: 'Visual progress journal', heading: 'The evolution of Shear Chemistry.', intro: 'From approved permits to the final reveal, here is every phase of our journey to the May 2027 opening.', background: build.framing.ref() }, { theme: 'dark' }),
@@ -250,8 +274,8 @@ async function main() {
     {
       slug: 'founding-members',
       title: 'Founding Members',
-      seoTitle: 'Founding Member VIP Waitlist, Location & FAQ',
-      seoDescription: 'Join the Founding Member VIP waitlist for Shear Chemistry Salon Suites at 1341 Moreland Ave, Atlanta. Parking details, neighborhood map and answers to common questions.',
+      seoTitle: 'Founding Member Waitlist & FAQ',
+      seoDescription: 'Join the Founding Member VIP waitlist for Shear Chemistry Salon Suites at 1341 Moreland Ave, Atlanta. Parking, neighborhood map and FAQ.',
       sections: [
         section('pageHeader', { eyebrow: 'Founding Members', heading: 'Get on the list before the doors open.', intro: 'A limited number of Founding Members will be the first to choose suites at 1341 Moreland Avenue.', background: mood.ref() }, { theme: 'dark' }),
         section('waitlistForm', {
@@ -271,8 +295,8 @@ async function main() {
           intro: 'In the heart of Southeast Atlanta, next door to Halidom Eatery, with easy access for you and your clients.',
           mapQuery: '1341 Moreland Ave SE, Atlanta, GA 30316',
           parking: [
-            { icon: 'ParkingSquare', title: 'Free on-site parking', description: 'Ample free parking in the shared lot for pros and clients.' },
-            { icon: 'Car', title: 'Easy drop-off', description: 'Clients can pull up right by the main entrance.' },
+            { icon: 'ParkingSquare', title: 'Parking for pros', description: 'Free, ample on-site parking for members, with easy load-in for supplies and equipment.' },
+            { icon: 'Car', title: 'Parking for clients', description: 'Free on-site client parking steps from the entrance, plus a quick drop-off spot by the door.' },
             { icon: 'DoorOpen', title: 'Suite 201 entrance', description: 'Follow the gold signage to our main door and directory kiosk.' },
             { icon: 'Clock', title: '24/7 for pros', description: 'Smart-lock access means early starts and late appointments are no problem.' },
           ],
@@ -304,7 +328,7 @@ async function main() {
       slug: 'find-a-pro',
       title: 'Find a Beauty Pro',
       availability: 'phase2',
-      seoTitle: 'Find a Beauty Pro in Southeast Atlanta',
+      seoTitle: 'Find a Beauty Pro in SE Atlanta',
       seoDescription: 'Find independent hair stylists, barbers, lash artists, estheticians, nail techs and wellness pros at Shear Chemistry Salon Suites on Moreland Ave, Atlanta.',
       sections: [
         section('pageHeader', { eyebrow: 'Member directory', heading: 'Find your beauty pro.', intro: 'Meet the independent artists of Shear Chemistry and book directly with them.', background: null }, { theme: 'dark' }),
@@ -315,7 +339,7 @@ async function main() {
       slug: 'book-a-tour',
       title: 'Book a Tour',
       availability: 'phase2',
-      seoTitle: 'Book a Private Salon Suite Tour in Atlanta',
+      seoTitle: 'Book a Private Suite Tour',
       seoDescription: 'Schedule a private tour of Shear Chemistry Salon Suites at 1341 Moreland Ave, Atlanta. See single and double, wet and dry suites in person.',
       sections: [
         section('pageHeader', { eyebrow: 'Private tours', heading: 'Come see the chemistry.', intro: 'Pick a time for a private, one-on-one walkthrough of the studio and available suites.', background: hero.ref() }, { theme: 'dark' }),
@@ -360,9 +384,9 @@ async function main() {
 
   /* ----------------------------- Collections ----------------------------- */
   const milestones = [
-    { title: 'Permits & Prep', dateLabel: 'November 2026', status: 'completed', caption: 'Lease signed, architectural drawings finalized and building permits **approved**. Demolition and site prep are complete.', gallery: [build.blueprint.ref(), mood.ref()] },
-    { title: 'Framing & Plumbing', dateLabel: 'January 2027', status: 'in-progress', caption: 'Suite walls are framed and rough-in plumbing is going in for the wet suites and the Wash & Dry Lounge.', gallery: [build.framing.ref(), build.plumbing.ref()] },
-    { title: 'Custom Finishes & Smart Locks', dateLabel: 'March 2027', status: 'upcoming', caption: 'Tile, cabinetry, lighting and black-and-gold signage go in, along with smart locks on every suite.', gallery: [build.finishes.ref(), build.smartlock.ref()] },
+    { title: 'Permits & Prep', dateLabel: 'October – November 2026', status: 'completed', caption: 'Lease signed, architectural drawings finalized and building permits **approved**. Demolition and site prep are complete.', gallery: [build.blueprint.ref(), mood.ref()] },
+    { title: 'Framing & Plumbing', dateLabel: 'December 2026 – January 2027', status: 'in-progress', caption: 'Suite walls are framed and rough-in plumbing is going in for the wet suites and the Wash & Dry Lounge.', gallery: [build.framing.ref(), build.plumbing.ref()] },
+    { title: 'Custom Finishes & Smart Locks', dateLabel: 'February – April 2027', status: 'upcoming', caption: 'Tile, cabinetry, lighting and black-and-gold signage go in, along with smart locks on every suite.', gallery: [build.finishes.ref(), build.smartlock.ref()] },
     { title: 'Final Reveal & May 2027 Opening', dateLabel: 'May 2027', status: 'upcoming', caption: 'Final walkthroughs, Founding Member move-in and our grand opening celebration on Moreland Avenue.', gallery: [build.reveal.ref()] },
   ];
   for (const [i, m] of milestones.entries()) await db.orm.milestones.create({ ...m, order: i + 1 });
@@ -395,15 +419,20 @@ async function main() {
     ['Lauren Kim', '678-555-0175', 'lauren.kim@example.com', 'Nail Technician', 'Single', 'Not sure yet', 'Summer 2027', '', 'signed'],
     ['Jordan Price', '470-555-0138', 'jordan.price@example.com', 'Brow Artist', 'Not sure yet', 'Dry', 'May 2027 (Grand Opening)', '', 'new'],
   ];
-  for (const [name, phone, email, specialty, suiteSize, suiteType, moveIn, message, status] of leads) {
-    await db.orm.leads.create({ name, phone, email, specialty, suiteSize, suiteType, moveIn, message, status, notes: '', emailStatus: 'sent' });
+  // Sample inquiries only go into an empty inbox, so real leads never get mixed with fake ones.
+  const seedLeads = !(await db.orm.leads.select('id').first());
+  if (seedLeads) {
+    for (const [name, phone, email, specialty, suiteSize, suiteType, moveIn, message, status] of leads) {
+      await db.orm.leads.create({ name, phone, email, specialty, suiteSize, suiteType, moveIn, message, status, notes: '', emailStatus: 'sent' });
+    }
   }
 
   const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
-  await db.orm.bookings.create({ name: 'Tiana Morris', email: 'tiana.morris@example.com', phone: '404-555-0181', specialty: 'Hair Stylist', date: inDays(5), time: '11:00', notes: 'Interested in a wet suite.', status: 'confirmed', emailStatus: 'sent' });
-  await db.orm.bookings.create({ name: 'Priya Desai', email: 'priya.desai@example.com', phone: '770-555-0147', specialty: 'Esthetician', date: inDays(8), time: '14:00', notes: '', status: 'pending', emailStatus: 'sent' });
+  const seedBookings = !(await db.orm.bookings.select('id').first());
+  if (seedBookings) await db.orm.bookings.create({ name: 'Tiana Morris', email: 'tiana.morris@example.com', phone: '404-555-0181', specialty: 'Hair Stylist', date: inDays(5), time: '11:00', notes: 'Interested in a wet suite.', status: 'confirmed', emailStatus: 'sent' });
+  if (seedBookings) await db.orm.bookings.create({ name: 'Priya Desai', email: 'priya.desai@example.com', phone: '770-555-0147', specialty: 'Esthetician', date: inDays(8), time: '14:00', notes: '', status: 'pending', emailStatus: 'sent' });
 
-  console.log(`Seeded ${pages.length} pages, ${milestones.length} milestones, ${suites.length} suite types, ${members.length} pros, ${leads.length} leads and 2 bookings.`);
+  console.log(`Seeded ${pages.length} pages, ${milestones.length} milestones, ${suites.length} suite types, ${members.length} pros, ${seedLeads ? leads.length : 0} sample leads and ${seedBookings ? 2 : 0} sample bookings.`);
 }
 
 main()

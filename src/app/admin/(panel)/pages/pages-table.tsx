@@ -63,10 +63,10 @@ export function PagesTable({ pages }: { pages: Row[] }) {
                   <TableCell className="hidden lg:table-cell">{p.sections}</TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
-                      <Button size="icon-sm" variant="ghost" render={<a href={href} target="_blank" rel="noreferrer" aria-label="View page" />}>
+                      <Button nativeButton={false} size="icon-sm" variant="ghost" render={<a href={href} target="_blank" rel="noreferrer" aria-label="View page" />}>
                         <ExternalLink />
                       </Button>
-                      <Button size="icon-sm" variant="ghost" render={<Link href={`/admin/pages/${p.id}`} aria-label="Edit page" />}>
+                      <Button nativeButton={false} size="icon-sm" variant="ghost" render={<Link href={`/admin/pages/${p.id}`} aria-label="Edit page" />}>
                         <Pencil />
                       </Button>
                       {p.slug !== 'home' && (

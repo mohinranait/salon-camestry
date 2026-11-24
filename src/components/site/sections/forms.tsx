@@ -12,8 +12,8 @@ export function WaitlistSection({ section, settings }: SectionProps) {
   const perks = arr<string>(d.perks);
   return (
     <SectionShell theme={section.theme} anchor={section.anchor || 'waitlist'}>
-      <div className="grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
-        <div className="space-y-7">
+      <div className="grid gap-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20">
+        <div className="min-w-0 space-y-7">
           <Eyebrow className="reveal">{str(d.eyebrow)}</Eyebrow>
           <Heading className="reveal">{str(d.heading)}</Heading>
           <RichText text={d.intro} className="reveal text-base leading-relaxed opacity-75 md:text-lg" />
@@ -33,7 +33,7 @@ export function WaitlistSection({ section, settings }: SectionProps) {
             </div>
           )}
         </div>
-        <div className="reveal border border-sc-gold/30 bg-current/[0.02] p-6 sm:p-10">
+        <div className="reveal min-w-0 border border-sc-gold/30 bg-current/[0.02] p-6 sm:p-10">
           <WaitlistForm
             options={settings.forms}
             submitLabel={str(d.submitLabel)}
@@ -63,8 +63,8 @@ export function TourBookingSection({ section, settings }: SectionProps) {
   const expectations = arr<string>(d.expectations);
   return (
     <SectionShell theme={section.theme} anchor={section.anchor || 'book'}>
-      <div className="grid gap-14 lg:grid-cols-[0.8fr_1.2fr]">
-        <div className="space-y-7">
+      <div className="grid gap-14 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <div className="min-w-0 space-y-7">
           <Eyebrow className="reveal">{str(d.eyebrow)}</Eyebrow>
           <Heading className="reveal">{str(d.heading)}</Heading>
           <RichText text={d.intro} className="reveal text-base leading-relaxed opacity-75" />
@@ -83,7 +83,7 @@ export function TourBookingSection({ section, settings }: SectionProps) {
             </div>
           )}
         </div>
-        <div className="reveal border border-sc-gold/30 p-6 sm:p-10">
+        <div className="reveal min-w-0 border border-sc-gold/30 p-6 sm:p-10">
           <TourBookingClient
             specialties={settings.forms.specialties}
             durationMinutes={settings.booking.durationMinutes}

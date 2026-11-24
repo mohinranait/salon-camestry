@@ -18,7 +18,7 @@ import type {
 } from '@prisma/orm-mongo/contract-types';
 
 export type StorageHash =
-  StorageHashBase<'d7086df5494229f006795838cf76102baac3a2320ff66855826e6504a73155c1'>;
+  StorageHashBase<'7f28862398be9abf569cd31b965d77b639105c0c54768349dd07b3c5458634d9'>;
 export type ExecutionHash =
   ExecutionHashBase<'41d230c727b191923b7c27b9e20a5c2704eca44fa190b0bb94de27e0703782a8'>;
 export type ProfileHash =
@@ -109,14 +109,12 @@ export namespace Models {
     blurDataUrl: FieldOutputTypes['__unbound__']['Media']['blurDataUrl'];
     createdAt: FieldOutputTypes['__unbound__']['Media']['createdAt'];
     defaultAlt: FieldOutputTypes['__unbound__']['Media']['defaultAlt'];
-    fileId: FieldOutputTypes['__unbound__']['Media']['fileId'];
     filename: FieldOutputTypes['__unbound__']['Media']['filename'];
     height: FieldOutputTypes['__unbound__']['Media']['height'];
     id: FieldOutputTypes['__unbound__']['Media']['id'];
     kind: FieldOutputTypes['__unbound__']['Media']['kind'];
     mimeType: FieldOutputTypes['__unbound__']['Media']['mimeType'];
     originalName: FieldOutputTypes['__unbound__']['Media']['originalName'];
-    provider: FieldOutputTypes['__unbound__']['Media']['provider'];
     publicId: FieldOutputTypes['__unbound__']['Media']['publicId'];
     resourceType: FieldOutputTypes['__unbound__']['Media']['resourceType'];
     size: FieldOutputTypes['__unbound__']['Media']['size'];
@@ -265,6 +263,21 @@ type ContractBase = Omit<
               };
             };
             readonly bookings: {
+              readonly indexes: readonly [
+                {
+                  readonly keys: readonly [
+                    { readonly direction: 1; readonly field: 'date' },
+                    { readonly direction: 1; readonly field: 'time' },
+                  ];
+                  readonly kind: 'mongo-index';
+                  readonly name: 'date_1_time_1';
+                },
+                {
+                  readonly keys: readonly [{ readonly direction: 1; readonly field: 'status' }];
+                  readonly kind: 'mongo-index';
+                  readonly name: 'status_1';
+                },
+              ];
               readonly kind: 'mongo-collection';
               readonly validator: {
                 readonly jsonSchema: {
@@ -305,6 +318,18 @@ type ContractBase = Omit<
               };
             };
             readonly leads: {
+              readonly indexes: readonly [
+                {
+                  readonly keys: readonly [{ readonly direction: 1; readonly field: 'createdAt' }];
+                  readonly kind: 'mongo-index';
+                  readonly name: 'createdAt_1';
+                },
+                {
+                  readonly keys: readonly [{ readonly direction: 1; readonly field: 'status' }];
+                  readonly kind: 'mongo-index';
+                  readonly name: 'status_1';
+                },
+              ];
               readonly kind: 'mongo-collection';
               readonly validator: {
                 readonly jsonSchema: {
@@ -349,6 +374,26 @@ type ContractBase = Omit<
               };
             };
             readonly media: {
+              readonly indexes: readonly [
+                {
+                  readonly keys: readonly [{ readonly direction: 1; readonly field: 'createdAt' }];
+                  readonly kind: 'mongo-index';
+                  readonly name: 'createdAt_1';
+                },
+                {
+                  readonly keys: readonly [
+                    { readonly direction: 1; readonly field: 'kind' },
+                    { readonly direction: 1; readonly field: 'createdAt' },
+                  ];
+                  readonly kind: 'mongo-index';
+                  readonly name: 'kind_1_createdAt_1';
+                },
+                {
+                  readonly keys: readonly [{ readonly direction: 1; readonly field: 'tags' }];
+                  readonly kind: 'mongo-index';
+                  readonly name: 'tags_1';
+                },
+              ];
               readonly kind: 'mongo-collection';
               readonly validator: {
                 readonly jsonSchema: {
@@ -359,15 +404,13 @@ type ContractBase = Omit<
                     readonly blurDataUrl: { readonly bsonType: readonly ['null', 'string'] };
                     readonly createdAt: { readonly bsonType: 'date' };
                     readonly defaultAlt: { readonly bsonType: 'string' };
-                    readonly fileId: { readonly bsonType: 'string' };
                     readonly filename: { readonly bsonType: 'string' };
                     readonly height: { readonly bsonType: readonly ['null', 'int'] };
                     readonly kind: { readonly bsonType: 'string' };
                     readonly mimeType: { readonly bsonType: 'string' };
                     readonly originalName: { readonly bsonType: 'string' };
-                    readonly provider: { readonly bsonType: readonly ['null', 'string'] };
-                    readonly publicId: { readonly bsonType: readonly ['null', 'string'] };
-                    readonly resourceType: { readonly bsonType: readonly ['null', 'string'] };
+                    readonly publicId: { readonly bsonType: 'string' };
+                    readonly resourceType: { readonly bsonType: 'string' };
                     readonly size: { readonly bsonType: 'int' };
                     readonly tags: {
                       readonly bsonType: 'array';
@@ -375,22 +418,24 @@ type ContractBase = Omit<
                     };
                     readonly title: { readonly bsonType: 'string' };
                     readonly updatedAt: { readonly bsonType: 'date' };
-                    readonly url: { readonly bsonType: readonly ['null', 'string'] };
+                    readonly url: { readonly bsonType: 'string' };
                     readonly width: { readonly bsonType: readonly ['null', 'int'] };
                   };
                   readonly required: readonly [
                     '_id',
                     'createdAt',
                     'defaultAlt',
-                    'fileId',
                     'filename',
                     'kind',
                     'mimeType',
                     'originalName',
+                    'publicId',
+                    'resourceType',
                     'size',
                     'tags',
                     'title',
                     'updatedAt',
+                    'url',
                   ];
                 };
                 readonly kind: 'mongo-validator';
@@ -399,6 +444,16 @@ type ContractBase = Omit<
               };
             };
             readonly members: {
+              readonly indexes: readonly [
+                {
+                  readonly keys: readonly [
+                    { readonly direction: 1; readonly field: 'published' },
+                    { readonly direction: 1; readonly field: 'order' },
+                  ];
+                  readonly kind: 'mongo-index';
+                  readonly name: 'published_1_order_1';
+                },
+              ];
               readonly kind: 'mongo-collection';
               readonly validator: {
                 readonly jsonSchema: {
@@ -455,6 +510,13 @@ type ContractBase = Omit<
               };
             };
             readonly milestones: {
+              readonly indexes: readonly [
+                {
+                  readonly keys: readonly [{ readonly direction: 1; readonly field: 'order' }];
+                  readonly kind: 'mongo-index';
+                  readonly name: 'order_1';
+                },
+              ];
               readonly kind: 'mongo-collection';
               readonly validator: {
                 readonly jsonSchema: {
@@ -506,6 +568,11 @@ type ContractBase = Omit<
                   readonly kind: 'mongo-index';
                   readonly name: 'slug_1';
                   readonly unique: true;
+                },
+                {
+                  readonly keys: readonly [{ readonly direction: 1; readonly field: 'order' }];
+                  readonly kind: 'mongo-index';
+                  readonly name: 'order_1';
                 },
               ];
               readonly kind: 'mongo-collection';
@@ -611,6 +678,16 @@ type ContractBase = Omit<
               };
             };
             readonly suites: {
+              readonly indexes: readonly [
+                {
+                  readonly keys: readonly [
+                    { readonly direction: 1; readonly field: 'published' },
+                    { readonly direction: 1; readonly field: 'order' },
+                  ];
+                  readonly kind: 'mongo-index';
+                  readonly name: 'published_1_order_1';
+                },
+              ];
               readonly kind: 'mongo-collection';
               readonly validator: {
                 readonly jsonSchema: {
@@ -951,10 +1028,6 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'mongo/string@1' };
               };
-              readonly fileId: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'mongo/string@1' };
-              };
               readonly filename: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'mongo/string@1' };
@@ -979,16 +1052,12 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'mongo/string@1' };
               };
-              readonly provider: {
-                readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'mongo/string@1' };
-              };
               readonly publicId: {
-                readonly nullable: true;
+                readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'mongo/string@1' };
               };
               readonly resourceType: {
-                readonly nullable: true;
+                readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'mongo/string@1' };
               };
               readonly size: {
@@ -1009,7 +1078,7 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'mongo/date@1' };
               };
               readonly url: {
-                readonly nullable: true;
+                readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'mongo/string@1' };
               };
               readonly width: {
@@ -1024,14 +1093,12 @@ type ContractBase = Omit<
                 readonly blurDataUrl: { readonly field: 'blurDataUrl' };
                 readonly createdAt: { readonly field: 'createdAt' };
                 readonly defaultAlt: { readonly field: 'defaultAlt' };
-                readonly fileId: { readonly field: 'fileId' };
                 readonly filename: { readonly field: 'filename' };
                 readonly height: { readonly field: 'height' };
                 readonly id: { readonly field: '_id' };
                 readonly kind: { readonly field: 'kind' };
                 readonly mimeType: { readonly field: 'mimeType' };
                 readonly originalName: { readonly field: 'originalName' };
-                readonly provider: { readonly field: 'provider' };
                 readonly publicId: { readonly field: 'publicId' };
                 readonly resourceType: { readonly field: 'resourceType' };
                 readonly size: { readonly field: 'size' };

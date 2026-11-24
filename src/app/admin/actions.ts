@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { db } from '@/prisma/db';
 import { createSession, destroySession, requireAdmin } from '@/lib/server/auth';
+import { expireSiteCache } from '@/lib/server/cache';
 import { SETTINGS_KEY } from '@/lib/server/data';
 import { stripResolvedMedia } from '@/lib/server/media';
 import { DEFAULT_SETTINGS, mergeSettings, type SiteSettings } from '@/lib/settings';
@@ -13,9 +14,8 @@ import { SECTION_MAP } from '@/lib/sections/registry';
 
 export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
-function refreshSite() {
-  revalidatePath('/', 'layout');
-}
+// Every content save expires the public data cache so the change is live on the next view.
+const refreshSite = expireSiteCache;
 
 function fail(error: unknown): ActionResult {
   if (error instanceof z.ZodError) return { ok: false, error: error.issues[0]?.message ?? 'Invalid data' };

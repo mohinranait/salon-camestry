@@ -438,13 +438,6 @@
                   "kind": "scalar"
                 }
               },
-              "fileId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "mongo/string@1",
-                  "kind": "scalar"
-                }
-              },
               "filename": {
                 "nullable": false,
                 "type": {
@@ -487,22 +480,15 @@
                   "kind": "scalar"
                 }
               },
-              "provider": {
-                "nullable": true,
-                "type": {
-                  "codecId": "mongo/string@1",
-                  "kind": "scalar"
-                }
-              },
               "publicId": {
-                "nullable": true,
+                "nullable": false,
                 "type": {
                   "codecId": "mongo/string@1",
                   "kind": "scalar"
                 }
               },
               "resourceType": {
-                "nullable": true,
+                "nullable": false,
                 "type": {
                   "codecId": "mongo/string@1",
                   "kind": "scalar"
@@ -540,7 +526,7 @@
                 }
               },
               "url": {
-                "nullable": true,
+                "nullable": false,
                 "type": {
                   "codecId": "mongo/string@1",
                   "kind": "scalar"
@@ -567,9 +553,6 @@
                 "defaultAlt": {
                   "field": "defaultAlt"
                 },
-                "fileId": {
-                  "field": "fileId"
-                },
                 "filename": {
                   "field": "filename"
                 },
@@ -587,9 +570,6 @@
                 },
                 "originalName": {
                   "field": "originalName"
-                },
-                "provider": {
-                  "field": "provider"
                 },
                 "publicId": {
                   "field": "publicId"
@@ -1335,6 +1315,32 @@
               }
             },
             "bookings": {
+              "indexes": [
+                {
+                  "keys": [
+                    {
+                      "direction": 1,
+                      "field": "date"
+                    },
+                    {
+                      "direction": 1,
+                      "field": "time"
+                    }
+                  ],
+                  "kind": "mongo-index",
+                  "name": "date_1_time_1"
+                },
+                {
+                  "keys": [
+                    {
+                      "direction": 1,
+                      "field": "status"
+                    }
+                  ],
+                  "kind": "mongo-index",
+                  "name": "status_1"
+                }
+              ],
               "kind": "mongo-collection",
               "validator": {
                 "jsonSchema": {
@@ -1399,6 +1405,28 @@
               }
             },
             "leads": {
+              "indexes": [
+                {
+                  "keys": [
+                    {
+                      "direction": 1,
+                      "field": "createdAt"
+                    }
+                  ],
+                  "kind": "mongo-index",
+                  "name": "createdAt_1"
+                },
+                {
+                  "keys": [
+                    {
+                      "direction": 1,
+                      "field": "status"
+                    }
+                  ],
+                  "kind": "mongo-index",
+                  "name": "status_1"
+                }
+              ],
               "kind": "mongo-collection",
               "validator": {
                 "jsonSchema": {
@@ -1471,6 +1499,42 @@
               }
             },
             "media": {
+              "indexes": [
+                {
+                  "keys": [
+                    {
+                      "direction": 1,
+                      "field": "createdAt"
+                    }
+                  ],
+                  "kind": "mongo-index",
+                  "name": "createdAt_1"
+                },
+                {
+                  "keys": [
+                    {
+                      "direction": 1,
+                      "field": "kind"
+                    },
+                    {
+                      "direction": 1,
+                      "field": "createdAt"
+                    }
+                  ],
+                  "kind": "mongo-index",
+                  "name": "kind_1_createdAt_1"
+                },
+                {
+                  "keys": [
+                    {
+                      "direction": 1,
+                      "field": "tags"
+                    }
+                  ],
+                  "kind": "mongo-index",
+                  "name": "tags_1"
+                }
+              ],
               "kind": "mongo-collection",
               "validator": {
                 "jsonSchema": {
@@ -1492,9 +1556,6 @@
                     "defaultAlt": {
                       "bsonType": "string"
                     },
-                    "fileId": {
-                      "bsonType": "string"
-                    },
                     "filename": {
                       "bsonType": "string"
                     },
@@ -1513,23 +1574,11 @@
                     "originalName": {
                       "bsonType": "string"
                     },
-                    "provider": {
-                      "bsonType": [
-                        "null",
-                        "string"
-                      ]
-                    },
                     "publicId": {
-                      "bsonType": [
-                        "null",
-                        "string"
-                      ]
+                      "bsonType": "string"
                     },
                     "resourceType": {
-                      "bsonType": [
-                        "null",
-                        "string"
-                      ]
+                      "bsonType": "string"
                     },
                     "size": {
                       "bsonType": "int"
@@ -1547,10 +1596,7 @@
                       "bsonType": "date"
                     },
                     "url": {
-                      "bsonType": [
-                        "null",
-                        "string"
-                      ]
+                      "bsonType": "string"
                     },
                     "width": {
                       "bsonType": [
@@ -1563,15 +1609,17 @@
                     "_id",
                     "createdAt",
                     "defaultAlt",
-                    "fileId",
                     "filename",
                     "kind",
                     "mimeType",
                     "originalName",
+                    "publicId",
+                    "resourceType",
                     "size",
                     "tags",
                     "title",
-                    "updatedAt"
+                    "updatedAt",
+                    "url"
                   ]
                 },
                 "kind": "mongo-validator",
@@ -1580,6 +1628,22 @@
               }
             },
             "members": {
+              "indexes": [
+                {
+                  "keys": [
+                    {
+                      "direction": 1,
+                      "field": "published"
+                    },
+                    {
+                      "direction": 1,
+                      "field": "order"
+                    }
+                  ],
+                  "kind": "mongo-index",
+                  "name": "published_1_order_1"
+                }
+              ],
               "kind": "mongo-collection",
               "validator": {
                 "jsonSchema": {
@@ -1671,6 +1735,18 @@
               }
             },
             "milestones": {
+              "indexes": [
+                {
+                  "keys": [
+                    {
+                      "direction": 1,
+                      "field": "order"
+                    }
+                  ],
+                  "kind": "mongo-index",
+                  "name": "order_1"
+                }
+              ],
               "kind": "mongo-collection",
               "validator": {
                 "jsonSchema": {
@@ -1750,6 +1826,16 @@
                   "kind": "mongo-index",
                   "name": "slug_1",
                   "unique": true
+                },
+                {
+                  "keys": [
+                    {
+                      "direction": 1,
+                      "field": "order"
+                    }
+                  ],
+                  "kind": "mongo-index",
+                  "name": "order_1"
                 }
               ],
               "kind": "mongo-collection",
@@ -1902,6 +1988,22 @@
               }
             },
             "suites": {
+              "indexes": [
+                {
+                  "keys": [
+                    {
+                      "direction": 1,
+                      "field": "published"
+                    },
+                    {
+                      "direction": 1,
+                      "field": "order"
+                    }
+                  ],
+                  "kind": "mongo-index",
+                  "name": "published_1_order_1"
+                }
+              ],
               "kind": "mongo-collection",
               "validator": {
                 "jsonSchema": {
@@ -2049,7 +2151,7 @@
         "kind": "mongo-database"
       }
     },
-    "storageHash": "d7086df5494229f006795838cf76102baac3a2320ff66855826e6504a73155c1"
+    "storageHash": "7f28862398be9abf569cd31b965d77b639105c0c54768349dd07b3c5458634d9"
   },
   "execution": {
     "executionHash": "41d230c727b191923b7c27b9e20a5c2704eca44fa190b0bb94de27e0703782a8",

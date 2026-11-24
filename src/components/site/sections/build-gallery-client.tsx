@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Play, X } from 'lucide-react';
+import { cloudinaryVideoPoster } from '@/lib/cloudinary-url';
 import type { ResolvedMediaRef } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -97,7 +98,7 @@ export function BuildGalleryClient({ groups }: { groups: Group[] }) {
           >
             {item.media?.kind === 'video' ? (
               <>
-                <video src={`${item.media.url}#t=0.5`} muted playsInline preload="metadata" className="absolute inset-0 size-full object-cover" />
+                <video src={item.media.url} poster={cloudinaryVideoPoster(item.media.url)} muted playsInline preload="none" className="absolute inset-0 size-full object-cover" />
                 <span className="absolute inset-0 flex items-center justify-center">
                   <span className="flex size-14 items-center justify-center rounded-full bg-sc-black/70 text-sc-gold"><Play className="size-5 fill-current" /></span>
                 </span>

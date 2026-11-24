@@ -1,14 +1,31 @@
 import 'server-only';
-import { GridFSBucket, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import sharp from 'sharp';
 import { MongoFieldFilter } from '@prisma/orm-mongo/query-ast/execution';
-import { db, mongoDriver } from '@/prisma/db';
+import { db } from '@/prisma/db';
+import {
+  CLOUDINARY_SETTINGS_KEY, deleteFromCloudinary, parseStoredConfig, toCredentials, uploadToCloudinary,
+  type CloudinaryCredentials,
+} from '@/lib/cloudinary';
 import type { MediaInfo, MediaItem, MediaKind } from '@/lib/types';
 
 export const MAX_UPLOAD_BYTES = 200 * 1024 * 1024;
 
-export function bucket() {
-  return new GridFSBucket(mongoDriver(), { bucketName: 'media_files' });
+export class CloudinaryNotConfiguredError extends Error {
+  constructor() {
+    super('Cloudinary is not configured. Add your credentials in Admin → Cloudinary first.');
+  }
+}
+
+export async function getCloudinaryCredentials(): Promise<CloudinaryCredentials | null> {
+  const row = await db.orm.settings.where({ key: CLOUDINARY_SETTINGS_KEY }).first();
+  return toCredentials(parseStoredConfig(row?.data));
+}
+
+async function requireCredentials() {
+  const credentials = await getCloudinaryCredentials();
+  if (!credentials) throw new CloudinaryNotConfiguredError();
+  return credentials;
 }
 
 export function kindFromMime(mime: string): MediaKind {
@@ -34,40 +51,31 @@ function titleFromFilename(name: string) {
   return base.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/^\w/, (c) => c.toUpperCase());
 }
 
-export function mediaUrl(fileId: string, filename: string) {
-  // The GridFS id is part of the path, so replacing a file yields a new URL and caches stay correct.
-  return `/api/media/${fileId}/${encodeURIComponent(filename)}`;
+/** Tiny blurred preview shown while the full image loads. */
+async function blurPlaceholder(buffer: Buffer, mimeType: string) {
+  if (!mimeType.startsWith('image/') || mimeType === 'image/svg+xml') return null;
+  try {
+    const blur = await sharp(buffer, { failOn: 'none' }).rotate().resize(16, 16, { fit: 'inside' }).webp({ quality: 40 }).toBuffer();
+    return `data:image/webp;base64,${blur.toString('base64')}`;
+  } catch {
+    return null;
+  }
 }
 
-type StoredFile = { fileId: string; width: number | null; height: number | null; blurDataUrl: string | null };
-
-async function storeFile(buffer: Buffer, filename: string, mimeType: string): Promise<StoredFile> {
-  let width: number | null = null;
-  let height: number | null = null;
-  let blurDataUrl: string | null = null;
-
-  if (mimeType.startsWith('image/') && mimeType !== 'image/svg+xml') {
-    try {
-      const image = sharp(buffer, { failOn: 'none' }).rotate();
-      const meta = await image.metadata();
-      const rotated = (meta.orientation ?? 1) >= 5;
-      width = (rotated ? meta.height : meta.width) ?? null;
-      height = (rotated ? meta.width : meta.height) ?? null;
-      const blur = await image.clone().resize(16, 16, { fit: 'inside' }).webp({ quality: 40 }).toBuffer();
-      blurDataUrl = `data:image/webp;base64,${blur.toString('base64')}`;
-    } catch {
-      // Unreadable metadata is not fatal; the file is still stored.
-    }
-  }
-
-  const upload = bucket().openUploadStream(filename, { metadata: { contentType: mimeType } });
-  await new Promise<void>((resolve, reject) => {
-    upload.once('finish', () => resolve());
-    upload.once('error', reject);
-    upload.end(buffer);
-  });
-
-  return { fileId: upload.id.toString(), width, height, blurDataUrl };
+async function storeFile(credentials: CloudinaryCredentials, buffer: Buffer, filename: string, mimeType: string) {
+  const [result, blurDataUrl] = await Promise.all([
+    uploadToCloudinary(credentials, buffer, { filename, mimeType }),
+    blurPlaceholder(buffer, mimeType),
+  ]);
+  return {
+    publicId: result.public_id,
+    resourceType: result.resource_type,
+    url: result.secure_url,
+    size: result.bytes ?? buffer.length,
+    width: result.width ?? null,
+    height: result.height ?? null,
+    blurDataUrl,
+  };
 }
 
 export async function createMedia(input: {
@@ -78,19 +86,16 @@ export async function createMedia(input: {
   defaultAlt?: string;
   tags?: string[];
 }) {
+  const credentials = await requireCredentials();
   const filename = slugifyFilename(input.originalName);
-  const stored = await storeFile(input.buffer, filename, input.mimeType);
+  const stored = await storeFile(credentials, input.buffer, filename, input.mimeType);
   const title = input.title?.trim() || titleFromFilename(input.originalName);
   return db.orm.media.create({
-    fileId: stored.fileId,
+    ...stored,
     filename,
     originalName: input.originalName,
     mimeType: input.mimeType,
     kind: kindFromMime(input.mimeType),
-    size: input.buffer.length,
-    width: stored.width,
-    height: stored.height,
-    blurDataUrl: stored.blurDataUrl,
     title,
     defaultAlt: input.defaultAlt?.trim() || title,
     tags: input.tags ?? [],
@@ -99,30 +104,30 @@ export async function createMedia(input: {
 
 /** Swaps the file behind a media item; every placement keeps pointing at it. */
 export async function replaceMediaFile(id: string, buffer: Buffer, originalName: string, mimeType: string) {
+  const credentials = await requireCredentials();
   const existing = await db.orm.media.where({ id }).first();
   if (!existing) throw new Error('Media not found');
   const filename = slugifyFilename(originalName);
-  const stored = await storeFile(buffer, filename, mimeType);
+  const stored = await storeFile(credentials, buffer, filename, mimeType);
   const updated = await db.orm.media.where({ id }).update({
-    fileId: stored.fileId,
+    ...stored,
     filename,
     originalName,
     mimeType,
     kind: kindFromMime(mimeType),
-    size: buffer.length,
-    width: stored.width,
-    height: stored.height,
-    blurDataUrl: stored.blurDataUrl,
   });
-  await deleteGridFile(existing.fileId);
+  await removeStoredFile(existing.publicId, existing.resourceType);
   return updated;
 }
 
-export async function deleteGridFile(fileId: string) {
+/** Deletes the asset from Cloudinary. A missing asset or unconfigured account is not an error. */
+export async function removeStoredFile(publicId: string, resourceType: string) {
+  const credentials = await getCloudinaryCredentials();
+  if (!credentials || !publicId) return;
   try {
-    await bucket().delete(new ObjectId(fileId));
-  } catch {
-    // Already gone.
+    await deleteFromCloudinary(credentials, publicId, resourceType);
+  } catch (err) {
+    console.error('[media] Cloudinary delete failed', err);
   }
 }
 
@@ -131,7 +136,7 @@ type MediaRow = Awaited<ReturnType<typeof db.orm.media.create>>;
 export function toMediaInfo(row: MediaRow): MediaInfo {
   return {
     id: row.id,
-    url: mediaUrl(row.fileId, row.filename),
+    url: row.url,
     kind: row.kind as MediaKind,
     mimeType: row.mimeType,
     width: row.width ?? null,

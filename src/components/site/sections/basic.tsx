@@ -108,7 +108,7 @@ export function FormulaSection({ section }: SectionProps) {
   const dark = section.theme === 'dark';
   return (
     <SectionShell theme={section.theme} anchor={section.anchor}>
-      <div className={cn('grid gap-12', image && 'lg:grid-cols-[1fr_1.3fr] lg:items-start')}>
+      <div className={cn('grid gap-12', image && 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] lg:items-start')}>
         <div className={cn(image && 'lg:sticky lg:top-28')}>
           <SectionIntro eyebrow={str(d.eyebrow)} heading={str(d.heading)} intro={<RichText text={d.intro} />} className="mb-8" />
           {image && (

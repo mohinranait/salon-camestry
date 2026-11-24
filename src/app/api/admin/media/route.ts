@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { MongoAndExpr, MongoFieldFilter, MongoOrExpr } from '@prisma/orm-mongo/query-ast/execution';
 import { db } from '@/prisma/db';
 import { getSession } from '@/lib/server/auth';
-import { createMedia, MAX_UPLOAD_BYTES, toMediaItem } from '@/lib/server/media';
+import { CloudinaryNotConfiguredError, createMedia, getCloudinaryCredentials, MAX_UPLOAD_BYTES, toMediaItem } from '@/lib/server/media';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +52,9 @@ export async function POST(request: Request) {
   const form = await request.formData();
   const files = form.getAll('files').filter((f): f is File => f instanceof File);
   if (files.length === 0) return NextResponse.json({ error: 'No files received' }, { status: 400 });
+  if (!(await getCloudinaryCredentials())) {
+    return NextResponse.json({ error: new CloudinaryNotConfiguredError().message, code: 'CLOUDINARY_NOT_CONFIGURED' }, { status: 409 });
+  }
 
   const created = [];
   const errors: string[] = [];
@@ -64,9 +67,13 @@ export async function POST(request: Request) {
       errors.push(`${file.name}: larger than 200 MB`);
       continue;
     }
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const row = await createMedia({ buffer, originalName: file.name, mimeType: file.type });
-    created.push(toMediaItem(row));
+    try {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const row = await createMedia({ buffer, originalName: file.name, mimeType: file.type });
+      created.push(toMediaItem(row));
+    } catch (err) {
+      errors.push(`${file.name}: ${err instanceof Error ? err.message : 'upload failed'}`);
+    }
   }
   return NextResponse.json({ items: created, errors }, { status: created.length ? 201 : 400 });
 }
