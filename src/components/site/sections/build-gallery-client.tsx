@@ -72,8 +72,8 @@ export function BuildGalleryClient({ groups }: { groups: Group[] }) {
   }
 
   return (
-    <>
-      <div className="mb-8 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
+    <div className="min-w-0 max-w-full">
+      <div className="mb-8 flex max-w-full gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
         {[{ id: 'all', title: 'All phases' }, ...groups].map((g) => (
           <button
             key={g.id}
@@ -123,6 +123,6 @@ export function BuildGalleryClient({ groups }: { groups: Group[] }) {
         ))}
       </div>
       {open !== null && <Lightbox items={items} index={open} onClose={() => setOpen(null)} onIndex={setOpen} />}
-    </>
+    </div>
   );
 }

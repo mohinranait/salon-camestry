@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowUpRight, Menu, X } from 'lucide-react';
 import type { LinkValue, NavItem, ResolvedMediaRef } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -68,10 +69,15 @@ export function SiteHeader({
 }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   // The menu remembers the page it was opened on, so navigating closes it.
   const [openOn, setOpenOn] = useState<string | null>(null);
   const open = openOn === pathname;
   const setOpen = (value: boolean) => setOpenOn(value ? pathname : null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -87,18 +93,40 @@ export function SiteHeader({
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    const onResize = () => {
+      if (window.innerWidth >= 1024) setOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [open]);
+
   const solid = scrolled || !overlay;
   const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href.split('#')[0]));
 
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 transition-all duration-500',
-        overlay && !scrolled ? '-mb-22 bg-transparent' : 'bg-sc-black/95 shadow-[0_1px_0_rgba(198,161,91,0.25)] backdrop-blur',
+        'sticky top-0 transition-colors duration-300',
+        overlay && !scrolled ? '-mb-22' : 'shadow-[0_1px_0_rgba(198,161,91,0.25)]',
+        open
+          ? 'z-[60] bg-sc-black'
+          : overlay && !scrolled
+            ? 'z-40 bg-transparent'
+            : 'z-40 bg-sc-black/95 backdrop-blur',
       )}
+      style={open ? { backgroundColor: 'var(--sc-black, #0d0d0d)' } : undefined}
     >
       <div className={cn('mx-auto flex max-w-7xl items-center justify-between gap-6 px-5 transition-all sm:px-8', solid ? 'h-18' : 'h-22')}>
-        <Link href="/" aria-label={`${name} home`} className="shrink-0">
+        <Link href="/" aria-label={`${name} home`} className="shrink-0" onClick={() => setOpen(false)}>
           <Logo name={name} logo={logo} logoLight={logoLight} solid={false} />
         </Link>
         <nav aria-label="Main" className="hidden items-center gap-8 lg:flex">
@@ -124,49 +152,59 @@ export function SiteHeader({
           </Link>
           <button
             type="button"
-            className="flex size-11 items-center justify-center rounded-full border border-sc-ivory/25 text-sc-ivory lg:hidden"
-            aria-label="Open menu"
+            className="flex size-11 items-center justify-center rounded-full border border-sc-ivory/25 text-sc-ivory transition-colors hover:border-sc-gold hover:text-sc-gold lg:hidden"
+            aria-label={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open}
-            onClick={() => setOpen(true)}
+            onClick={() => setOpen(!open)}
           >
-            <Menu className="size-5" />
+            {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
       </div>
 
-      <div
-        className={cn(
-          'fixed inset-0 z-50 flex flex-col bg-sc-black text-sc-ivory transition-opacity duration-300 lg:hidden',
-          open ? 'opacity-100' : 'pointer-events-none opacity-0',
+      {mounted &&
+        createPortal(
+          <div
+            className={cn(
+              'fixed inset-0 z-[55] flex flex-col bg-sc-black text-sc-ivory transition-opacity duration-300 lg:hidden',
+              open ? 'opacity-100 pointer-events-auto' : 'pointer-events-none opacity-0',
+            )}
+            style={{ backgroundColor: 'var(--sc-black, #0d0d0d)' }}
+            aria-hidden={!open}
+          >
+            {/* Spacer matching the header height so menu content starts cleanly below the header bar */}
+            <div className={cn('shrink-0 transition-all', solid ? 'h-18' : 'h-22')} />
+            <div className="gold-rule mx-5" />
+            <nav aria-label="Mobile" className="flex flex-1 flex-col justify-center gap-2 px-6 py-4 overflow-y-auto">
+              {nav.map((item, i) => (
+                <Link
+                  key={item.href + item.label}
+                  href={item.href}
+                  tabIndex={open ? 0 : -1}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    'flex items-baseline gap-4 py-2 font-display text-4xl transition-colors hover:text-sc-gold',
+                    isActive(item.href) && 'text-sc-gold',
+                  )}
+                >
+                  <span className="font-sans text-xs text-sc-gold/70">0{i + 1}</span>
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <div className="p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shrink-0">
+              <Link
+                href={cta.href}
+                tabIndex={open ? 0 : -1}
+                onClick={() => setOpen(false)}
+                className="flex min-h-14 items-center justify-center gap-2 rounded-full bg-sc-gold text-sm font-semibold tracking-[0.16em] text-sc-black uppercase transition-colors hover:bg-sc-gold-light"
+              >
+                {cta.label} <ArrowUpRight className="size-4" />
+              </Link>
+            </div>
+          </div>,
+          document.body,
         )}
-        aria-hidden={!open}
-      >
-        <div className="flex h-18 items-center justify-between px-5">
-          <Wordmark name={name} />
-          <button type="button" aria-label="Close menu" className="flex size-11 items-center justify-center rounded-full border border-sc-ivory/25" onClick={() => setOpen(false)}>
-            <X className="size-5" />
-          </button>
-        </div>
-        <div className="gold-rule mx-5" />
-        <nav aria-label="Mobile" className="flex flex-1 flex-col justify-center gap-2 px-6">
-          {nav.map((item, i) => (
-            <Link
-              key={item.href + item.label}
-              href={item.href}
-              tabIndex={open ? 0 : -1}
-              className={cn('flex items-baseline gap-4 py-2 font-display text-4xl transition-colors hover:text-sc-gold', isActive(item.href) && 'text-sc-gold')}
-            >
-              <span className="font-sans text-xs text-sc-gold/70">0{i + 1}</span>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="p-5">
-          <Link href={cta.href} tabIndex={open ? 0 : -1} className="flex min-h-14 items-center justify-center gap-2 rounded-full bg-sc-gold text-sm font-semibold tracking-[0.16em] text-sc-black uppercase">
-            {cta.label} <ArrowUpRight className="size-4" />
-          </Link>
-        </div>
-      </div>
     </header>
   );
 }

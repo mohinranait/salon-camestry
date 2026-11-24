@@ -19,9 +19,9 @@ export function DirectoryClient({ members, specialties, emptyMessage }: { member
   }, [members, filter, q]);
 
   return (
-    <div>
+    <div className="min-w-0 max-w-full">
       <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
+        <div className="flex max-w-full gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
           {['All', ...specialties].map((s) => (
             <button
               key={s}

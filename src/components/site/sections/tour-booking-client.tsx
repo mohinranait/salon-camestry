@@ -103,7 +103,7 @@ export function TourBookingClient({
         ) : days.length === 0 ? (
           <p className="text-sm opacity-70">No tour days are open right now. Please check back soon.</p>
         ) : (
-          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
+          <div className="-mx-1 flex max-w-full gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
             {days.map((d) => {
               const dt = new Date(`${d}T12:00:00Z`);
               return (

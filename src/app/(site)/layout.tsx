@@ -26,7 +26,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const css = `:root{--sc-gold:${brand.gold};--sc-gold-light:${brand.goldLight};--sc-black:${brand.black};--sc-ivory:${brand.ivory};--sc-charcoal:${brand.charcoal};}`;
 
   return (
-    <div className="flex min-h-screen flex-col bg-sc-black font-sans text-sc-charcoal">
+    <div className="flex min-h-screen flex-col overflow-x-clip bg-sc-black font-sans text-sc-charcoal">
       <style dangerouslySetInnerHTML={{ __html: css.replace(/[<>]/g, '') }} />
       <a href="#main" className="sr-only z-[70] bg-sc-gold px-4 py-2 text-sc-black focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
         Skip to content

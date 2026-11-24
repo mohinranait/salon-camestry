@@ -14,9 +14,9 @@ export function FaqClient({ items }: { items: Item[] }) {
   const visible = items.filter((i) => category === 'All' || i.category === category);
 
   return (
-    <div>
+    <div className="min-w-0 max-w-full">
       {categories.length > 2 && (
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
+        <div className="mb-6 flex max-w-full gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">
           {categories.map((c) => (
             <button
               key={c}

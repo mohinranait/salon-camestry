@@ -162,8 +162,8 @@ export function LocationSection({ section, settings }: SectionProps) {
   const nearby = arr<{ name: string; detail: string }>(d.nearby);
   return (
     <SectionShell theme={section.theme} anchor={section.anchor}>
-      <div className="grid gap-12 lg:grid-cols-2">
-        <div>
+      <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+        <div className="min-w-0">
           <SectionIntro eyebrow={str(d.eyebrow)} heading={str(d.heading)} intro={<RichText text={d.intro} />} className="mb-10" />
           <address className="reveal mb-10 border-l-2 border-sc-gold pl-5 not-italic">
             <p className="font-display text-2xl">{g.street}, {g.suite}</p>
@@ -192,7 +192,7 @@ export function LocationSection({ section, settings }: SectionProps) {
             </ul>
           )}
         </div>
-        <div className="reveal relative min-h-[420px] overflow-hidden border border-current/10 lg:min-h-full">
+        <div className="reveal relative min-h-[420px] min-w-0 overflow-hidden border border-current/10 lg:min-h-full">
           <iframe
             title={`Map of ${g.siteName}`}
             src={`https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=16&output=embed`}
@@ -211,8 +211,8 @@ export function FaqSection({ section }: SectionProps) {
   const items = arr<{ category: string; question: string; answer: string }>(d.items).filter((i) => i.question);
   return (
     <SectionShell theme={section.theme} anchor={section.anchor}>
-      <div className="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-        <SectionIntro eyebrow={str(d.eyebrow)} heading={str(d.heading)} intro={<RichText text={d.intro} />} className="lg:sticky lg:top-28 lg:self-start" />
+      <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <SectionIntro eyebrow={str(d.eyebrow)} heading={str(d.heading)} intro={<RichText text={d.intro} />} className="min-w-0 lg:sticky lg:top-28 lg:self-start" />
         <FaqClient items={items} />
       </div>
     </SectionShell>
