@@ -34,7 +34,18 @@ const GUIDES: Step[] = [
       'Every form submission appears in VIP waitlist leads and the new-lead count shows in the sidebar.',
       'Click a lead to see their details, call or email them, set a status (New, Contacted, Toured, Signed, Archived) and keep private notes.',
       'Click Export CSV to download the full list for a spreadsheet or email tool.',
-      'Edit the automatic welcome email in Site settings → Emails. Emails send once SMTP details are added to the server environment.',
+      'Edit the wording of the automatic welcome email in Site settings → Emails.',
+    ],
+  },
+  {
+    title: 'Set up email (once)',
+    href: '/admin/email',
+    link: 'Email',
+    steps: [
+      'Open Email and choose your provider (Gmail, Outlook, Zoho, Brevo, SendGrid, Mailgun or other). The server and port fill in for you.',
+      'Enter the username and password for the mailbox. Gmail and Outlook need an “app password”, not your normal password.',
+      'Set the From name and From email, click Test connection, then Send test email to check it arrives.',
+      'Switch on Send emails and click Save. Welcome emails, tour emails and your alerts now go out automatically.',
     ],
   },
   {
@@ -45,7 +56,7 @@ const GUIDES: Step[] = [
       <>Before launch, add your pros in <Link className="underline" href="/admin/members">Member directory</Link> with headshot, specialty, Instagram and booking link. They stay hidden until launch.</>,
       <>Set the days and times you offer tours in <Link className="underline" href="/admin/settings">Site settings → Tour booking</Link>.</>,
       'On the Dashboard click Switch to Phase 2. “Find a Beauty Pro” and “Book a Tour” go live, every waitlist button becomes “Book a Tour”, and the announcement bar shows its Phase 2 message.',
-      <>Tour requests then arrive in <Link className="underline" href="/admin/bookings">Tour bookings</Link>, where you confirm, complete or cancel them. Switching back to Phase 1 hides everything again.</>,
+      <>Tour requests then arrive in <Link className="underline" href="/admin/bookings">Tour bookings</Link>, where you confirm, complete or cancel them; confirming or cancelling emails the guest automatically. Switching back to Phase 1 hides everything again.</>,
     ],
   },
   {

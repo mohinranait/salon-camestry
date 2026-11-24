@@ -6,7 +6,6 @@ import { SmartLink } from '@/components/site/primitives';
 import { getSettings } from '@/lib/server/data';
 import { currentAnnouncement, primaryCta } from '@/lib/settings';
 
-
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
   return {

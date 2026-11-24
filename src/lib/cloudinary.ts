@@ -1,7 +1,8 @@
 // Cloudinary storage for the media library. No `server-only` import, so the
 // seed script can use it too; never import it from client components.
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
+import { decryptSecret as decryptSecretFor, encryptSecret as encryptSecretFor } from './secrets';
 
 export const CLOUDINARY_SETTINGS_KEY = 'cloudinary';
 
@@ -18,30 +19,9 @@ export type CloudinaryCredentials = { cloudName: string; apiKey: string; apiSecr
 
 export const DEFAULT_FOLDER = 'shear-chemistry';
 
-function encryptionKey() {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret) throw new Error('AUTH_SECRET must be set to store the Cloudinary secret');
-  return createHash('sha256').update(`cloudinary:${secret}`).digest();
-}
-
-export function encryptSecret(plain: string) {
-  const iv = randomBytes(12);
-  const cipher = createCipheriv('aes-256-gcm', encryptionKey(), iv);
-  const data = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()]);
-  return [iv, cipher.getAuthTag(), data].map((b) => b.toString('base64')).join('.');
-}
-
-export function decryptSecret(stored: string): string | null {
-  try {
-    const [iv, tag, data] = stored.split('.').map((p) => Buffer.from(p, 'base64'));
-    const decipher = createDecipheriv('aes-256-gcm', encryptionKey(), iv);
-    decipher.setAuthTag(tag);
-    return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
-  } catch {
-    // Wrong AUTH_SECRET or corrupted value: the secret has to be entered again.
-    return null;
-  }
-}
+// Cloudinary secrets keep their own key, so values saved earlier still decrypt.
+export const encryptSecret = (plain: string) => encryptSecretFor(plain, 'cloudinary');
+export const decryptSecret = (stored: string) => decryptSecretFor(stored, 'cloudinary');
 
 export function parseStoredConfig(data: unknown): StoredCloudinaryConfig {
   const d = (data && typeof data === 'object' ? data : {}) as Partial<StoredCloudinaryConfig>;

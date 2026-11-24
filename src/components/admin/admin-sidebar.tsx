@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  BookOpen, CalendarCheck, Cloud, ExternalLink, FileText, Gauge, HardHat, ImageIcon, LayoutGrid, LogOut, Settings, Sparkles, UserCog, Users,
+  BookOpen, CalendarCheck, Cloud, ExternalLink, FileText, Mail, Gauge, HardHat, ImageIcon, LayoutGrid, LogOut, Settings, Sparkles, UserCog, Users,
   UsersRound,
 } from 'lucide-react';
 import {
@@ -42,6 +42,7 @@ const groups = [
     items: [
       { href: '/admin/settings', label: 'Site settings', icon: Settings },
       { href: '/admin/cloudinary', label: 'Cloudinary', icon: Cloud },
+      { href: '/admin/email', label: 'Email', icon: Mail },
       { href: '/admin/users', label: 'Admin users', icon: UserCog },
     ],
   },

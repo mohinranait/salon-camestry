@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -18,6 +19,8 @@ const STATUSES: { value: BookingStatus; label: string }[] = [
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
+
+const EMAIL_LABEL: Record<string, string> = { sent: 'sent', skipped: 'not sent (email not set up)', failed: 'failed to send', disabled: 'turned off', pending: 'sending…' };
 
 export function BookingsTable({ bookings }: { bookings: BookingDoc[] }) {
   const router = useRouter();
@@ -65,11 +68,15 @@ export function BookingsTable({ bookings }: { bookings: BookingDoc[] }) {
                   <p className="text-xs text-muted-foreground">
                     <a href={`mailto:${b.email}`} className="hover:underline">{b.email}</a> · <a href={`tel:${b.phone}`} className="hover:underline">{b.phone}</a>
                   </p>
+                  <p className="text-[11px] text-muted-foreground">Last email: {EMAIL_LABEL[b.emailStatus] ?? b.emailStatus}</p>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">{b.specialty || '—'}</TableCell>
                 <TableCell className="hidden max-w-60 truncate text-xs lg:table-cell">{b.notes || '—'}</TableCell>
                 <TableCell>
-                  <Select items={STATUSES} value={b.status} onValueChange={(v) => run(() => updateBooking(b.id, v as BookingStatus), 'Booking updated', () => router.refresh())}>
+                  <Select items={STATUSES} value={b.status} onValueChange={(v) => run(() => updateBooking(b.id, v as BookingStatus), undefined, (r) => {
+                    if (r.ok) toast.success(r.id === 'notified' ? 'Booking updated · guest emailed' : 'Booking updated');
+                    router.refresh();
+                  })}>
                     <SelectTrigger size="sm" className="w-32"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}

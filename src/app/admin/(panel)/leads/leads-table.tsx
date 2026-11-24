@@ -25,7 +25,7 @@ const STATUSES: { value: LeadStatus; label: string; className: string }[] = [
 ];
 const statusMeta = (s: string) => STATUSES.find((x) => x.value === s) ?? STATUSES[0];
 
-const EMAIL_LABEL: Record<string, string> = { sent: 'Welcome sent', skipped: 'Email not configured', failed: 'Email failed', disabled: 'Welcome off', pending: 'Sending…' };
+const EMAIL_LABEL: Record<string, string> = { sent: 'Welcome sent', skipped: 'Not sent (email not set up)', failed: 'Email failed', disabled: 'Welcome off', pending: 'Sending…' };
 
 export function LeadsTable({ leads }: { leads: LeadDoc[] }) {
   const router = useRouter();

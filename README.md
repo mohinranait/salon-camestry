@@ -51,4 +51,6 @@ The dashboard has a one-click **Switch to Phase 2** button. Phase 2 unhides “F
 
 ## Email
 
-Set the `SMTP_*` variables to send the VIP welcome email, tour confirmations and owner alerts. Without them, emails are skipped and logged; templates are edited in Admin → Settings → Emails.
+Outgoing email is sent with Nodemailer through the SMTP server saved in **Admin → Email** (provider presets, test connection, test email; the password is stored encrypted with `AUTH_SECRET`). The `SMTP_*` environment variables are used only when nothing is saved there. Without either, leads and bookings are still saved and emails are skipped.
+
+Emails: Founding Member welcome, new-lead alert, tour request received, new-tour alert, tour confirmed and tour cancelled (sent when an admin changes a booking's status). They are sent after the response, so a slow mail server never delays the visitor. Wording is edited in Admin → Settings → Emails.

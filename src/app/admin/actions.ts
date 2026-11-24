@@ -7,7 +7,9 @@ import { z } from 'zod';
 import { db } from '@/prisma/db';
 import { createSession, destroySession, requireAdmin } from '@/lib/server/auth';
 import { expireSiteCache } from '@/lib/server/cache';
-import { SETTINGS_KEY } from '@/lib/server/data';
+import { getRawSettings, SETTINGS_KEY } from '@/lib/server/data';
+import { adminUrl, renderTemplate, sendEmail } from '@/lib/server/email';
+import { formatDate, formatTime } from '@/lib/booking';
 import { stripResolvedMedia } from '@/lib/server/media';
 import { DEFAULT_SETTINGS, mergeSettings, type SiteSettings } from '@/lib/settings';
 import { SECTION_MAP } from '@/lib/sections/registry';
@@ -305,9 +307,34 @@ export async function deleteLead(id: string): Promise<ActionResult> {
 export async function updateBooking(id: string, status: 'pending' | 'confirmed' | 'completed' | 'cancelled'): Promise<ActionResult> {
   await requireAdmin();
   try {
-    await db.orm.bookings.where({ id }).update({ status: z.enum(['pending', 'confirmed', 'completed', 'cancelled']).parse(status) });
+    const next = z.enum(['pending', 'confirmed', 'completed', 'cancelled']).parse(status);
+    const booking = await db.orm.bookings.where({ id }).first();
+    if (!booking) return { ok: false, error: 'Booking not found' };
+    await db.orm.bookings.where({ id }).update({ status: next });
+
+    // Tell the guest when a tour is confirmed or cancelled (only on an actual change).
+    const settings = await getRawSettings();
+    const template = next === 'confirmed' ? settings.emails.tourConfirmed : next === 'cancelled' ? settings.emails.tourCancelled : null;
+    let notified = false;
+    if (template?.enabled && booking.status !== next) {
+      const vars = {
+        name: booking.name,
+        firstName: booking.name.split(/\s+/)[0],
+        date: formatDate(booking.date),
+        time: formatTime(booking.time),
+        bookingUrl: adminUrl('/book-a-tour'),
+      };
+      const emailStatus = await sendEmail(settings, {
+        to: booking.email,
+        subject: renderTemplate(template.subject, vars),
+        text: renderTemplate(template.body, vars),
+        replyTo: settings.emails.notifyEmail || undefined,
+      });
+      await db.orm.bookings.where({ id }).update({ emailStatus });
+      notified = emailStatus === 'sent';
+    }
     revalidatePath('/admin', 'layout');
-    return { ok: true };
+    return { ok: true, id: notified ? 'notified' : undefined };
   } catch (e) {
     return fail(e);
   }

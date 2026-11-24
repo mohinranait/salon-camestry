@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/prisma/db';
 import { getRawSettings } from '@/lib/server/data';
 import { availableSlots } from '@/lib/server/bookings';
-import { renderTemplate, sendEmail } from '@/lib/server/email';
+import { adminUrl, renderTemplate, sendEmail } from '@/lib/server/email';
 import { clientKey, rateLimit } from '@/lib/server/rate-limit';
 import { formatDate, formatTime } from '@/lib/booking';
 
@@ -58,26 +58,29 @@ export async function POST(request: Request) {
     date: formatDate(data.date),
     time: formatTime(data.time),
   };
-  let emailStatus: string = 'disabled';
-  const tpl = settings.emails.tourConfirmation;
-  if (tpl.enabled) {
-    emailStatus = await sendEmail(settings, {
-      to: data.email,
-      subject: renderTemplate(tpl.subject, vars),
-      text: renderTemplate(tpl.body, vars),
-      replyTo: settings.emails.notifyEmail || undefined,
-    });
-  }
-  await db.orm.bookings.where({ id: booking.id }).update({ emailStatus });
+  // Emails go out after the response, so a slow mail server never delays the visitor.
+  after(async () => {
+    let emailStatus: string = 'disabled';
+    const tpl = settings.emails.tourConfirmation;
+    if (tpl.enabled) {
+      emailStatus = await sendEmail(settings, {
+        to: data.email,
+        subject: renderTemplate(tpl.subject, vars),
+        text: renderTemplate(tpl.body, vars),
+        replyTo: settings.emails.notifyEmail || undefined,
+      });
+    }
+    await db.orm.bookings.where({ id: booking.id }).update({ emailStatus });
 
-  if (settings.emails.bookingAlert.enabled && settings.emails.notifyEmail) {
-    await sendEmail(settings, {
-      to: settings.emails.notifyEmail,
-      subject: `New tour request: ${data.name} on ${vars.date} at ${vars.time}`,
-      text: `Name: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nSpecialty: ${data.specialty || '—'}\nWhen: ${vars.date} at ${vars.time}\nNotes: ${data.notes || '—'}`,
-      replyTo: data.email,
-    });
-  }
+    if (settings.emails.bookingAlert.enabled && settings.emails.notifyEmail) {
+      await sendEmail(settings, {
+        to: settings.emails.notifyEmail,
+        subject: `New tour request: ${data.name} on ${vars.date} at ${vars.time}`,
+        text: `Name: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nSpecialty: ${data.specialty || '—'}\nWhen: ${vars.date} at ${vars.time}\nNotes: ${data.notes || '—'}\n\nConfirm it here: ${adminUrl('/admin/bookings')}`,
+        replyTo: data.email,
+      });
+    }
+  });
 
   return NextResponse.json({ ok: true });
 }

@@ -77,6 +77,10 @@ export type SiteSettings = {
     waitlistWelcome: EmailTemplate;
     leadAlert: { enabled: boolean };
     tourConfirmation: EmailTemplate;
+    /** Sent when an admin marks a tour Confirmed. */
+    tourConfirmed: EmailTemplate;
+    /** Sent when an admin marks a tour Cancelled. */
+    tourCancelled: EmailTemplate;
     bookingAlert: { enabled: boolean };
   };
   booking: {
@@ -207,6 +211,31 @@ Thanks for requesting a private tour of Shear Chemistry Salon Suites on {{date}}
 We'll confirm your appointment shortly. The studio is at 1341 Moreland Avenue, Suite 201, Atlanta, GA 30316, with free on-site parking.
 
 See you soon,
+The Shear Chemistry Team`,
+    },
+    tourConfirmed: {
+      enabled: true,
+      subject: 'Confirmed: your Shear Chemistry tour on {{date}} at {{time}}',
+      body: `Hi {{firstName}},
+
+Your private tour is confirmed for {{date}} at {{time}}. We can't wait to show you around.
+
+Where: 1341 Moreland Avenue, Suite 201, Atlanta, GA 30316 (next to Halidom Eatery). Free on-site parking is right outside.
+
+Bring your questions and your vision. If your plans change, just reply to this email.
+
+See you soon,
+The Shear Chemistry Team`,
+    },
+    tourCancelled: {
+      enabled: true,
+      subject: 'Your Shear Chemistry tour on {{date}} was cancelled',
+      body: `Hi {{firstName}},
+
+Your private tour on {{date}} at {{time}} has been cancelled. We're sorry for any inconvenience.
+
+You can choose a new time anytime at {{bookingUrl}}, or reply to this email and we'll find one together.
+
 The Shear Chemistry Team`,
     },
     bookingAlert: { enabled: true },

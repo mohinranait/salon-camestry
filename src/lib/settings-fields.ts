@@ -154,13 +154,11 @@ export const SETTINGS_TABS: SettingsTab[] = [
     label: 'Emails',
     groups: [
       {
-        title: 'Sender',
-        description: 'Emails are sent through the SMTP server configured in the environment (SMTP_HOST, SMTP_USER, SMTP_PASS).',
+        title: 'Notifications',
+        description: 'The email server and sender address are set in Admin → Email. Here you choose who receives alerts and what each automatic email says.',
         path: ['emails'],
         fields: [
-          { type: 'text', name: 'fromName', label: 'From name' },
-          { type: 'text', name: 'fromEmail', label: 'From email' },
-          { type: 'text', name: 'notifyEmail', label: 'Owner notification email', help: 'New leads and tour requests are sent here' },
+          { type: 'text', name: 'notifyEmail', label: 'Owner notification email', help: 'New leads and tour requests are sent here, and guests’ replies go to it' },
         ],
       },
       {
@@ -182,6 +180,26 @@ export const SETTINGS_TABS: SettingsTab[] = [
           { type: 'boolean', name: 'enabled', label: 'Send automatically' },
           { type: 'text', name: 'subject', label: 'Subject' },
           { type: 'textarea', name: 'body', label: 'Message', rows: 10 },
+        ],
+      },
+      {
+        title: 'Tour confirmed',
+        description: 'Sent when you mark a tour Confirmed in Tour bookings. Variables: {{firstName}} {{name}} {{date}} {{time}}',
+        path: ['emails', 'tourConfirmed'],
+        fields: [
+          { type: 'boolean', name: 'enabled', label: 'Send automatically' },
+          { type: 'text', name: 'subject', label: 'Subject' },
+          { type: 'textarea', name: 'body', label: 'Message', rows: 9 },
+        ],
+      },
+      {
+        title: 'Tour cancelled',
+        description: 'Sent when you mark a tour Cancelled. Variables: {{firstName}} {{name}} {{date}} {{time}} {{bookingUrl}}',
+        path: ['emails', 'tourCancelled'],
+        fields: [
+          { type: 'boolean', name: 'enabled', label: 'Send automatically' },
+          { type: 'text', name: 'subject', label: 'Subject' },
+          { type: 'textarea', name: 'body', label: 'Message', rows: 8 },
         ],
       },
       { title: 'New booking alert', path: ['emails', 'bookingAlert'], fields: [{ type: 'boolean', name: 'enabled', label: 'Email the owner about each tour request' }] },

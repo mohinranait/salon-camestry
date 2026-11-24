@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/prisma/db';
 import { getRawSettings } from '@/lib/server/data';
-import { renderTemplate, sendEmail } from '@/lib/server/email';
+import { adminUrl, renderTemplate, sendEmail } from '@/lib/server/email';
 import { clientKey, rateLimit } from '@/lib/server/rate-limit';
 
 export const dynamic = 'force-dynamic';
@@ -59,23 +59,25 @@ export async function POST(request: Request) {
     moveIn: data.moveIn,
   };
 
-  let emailStatus: string = 'disabled';
-  const welcome = settings.emails.waitlistWelcome;
-  if (welcome.enabled) {
-    emailStatus = await sendEmail(settings, {
-      to: data.email,
-      subject: renderTemplate(welcome.subject, vars),
-      text: renderTemplate(welcome.body, vars),
-      replyTo: settings.emails.notifyEmail || undefined,
-    });
-  }
-  await db.orm.leads.where({ id: lead.id }).update({ emailStatus });
+  // Emails go out after the response, so a slow mail server never delays the visitor.
+  after(async () => {
+    let emailStatus: string = 'disabled';
+    const welcome = settings.emails.waitlistWelcome;
+    if (welcome.enabled) {
+      emailStatus = await sendEmail(settings, {
+        to: data.email,
+        subject: renderTemplate(welcome.subject, vars),
+        text: renderTemplate(welcome.body, vars),
+        replyTo: settings.emails.notifyEmail || undefined,
+      });
+    }
+    await db.orm.leads.where({ id: lead.id }).update({ emailStatus });
 
-  if (settings.emails.leadAlert.enabled && settings.emails.notifyEmail) {
-    await sendEmail(settings, {
-      to: settings.emails.notifyEmail,
-      subject: `New Founding Member lead: ${data.name}`,
-      text: `A new VIP waitlist inquiry arrived.
+    if (settings.emails.leadAlert.enabled && settings.emails.notifyEmail) {
+      await sendEmail(settings, {
+        to: settings.emails.notifyEmail,
+        subject: `New Founding Member lead: ${data.name}`,
+        text: `A new VIP waitlist inquiry arrived.
 
 Name: ${data.name}
 Email: ${data.email}
@@ -83,10 +85,13 @@ Phone: ${data.phone}
 Specialty / license: ${data.specialty}
 Suite: ${data.suiteSize} · ${data.suiteType}
 Target move-in: ${data.moveIn}
-Message: ${data.message || '—'}`,
-      replyTo: data.email,
-    });
-  }
+Message: ${data.message || '—'}
+
+View all leads: ${adminUrl('/admin/leads')}`,
+        replyTo: data.email,
+      });
+    }
+  });
 
   return NextResponse.json({ ok: true });
 }
