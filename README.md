@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Shear Chemistry Salon Suites
 
-## Getting Started
+Pre-launch and grand-opening website with a full admin panel.
 
-First, run the development server:
+**Stack:** Next.js 16 (App Router) · TypeScript · shadcn/ui · Tailwind CSS 4 · MongoDB · Prisma 8 (`@prisma/orm-mongo`)
+
+## Setup
+
+1. Copy `.env.example` to `.env` and fill in `DATABASE_URL` (MongoDB 8.0+), `AUTH_SECRET`, `SITE_URL` and the first admin account.
+2. Install and prepare the database:
+
+   ```bash
+   pnpm install
+   pnpm db:init      # creates collections, validators and indexes from src/prisma/contract.prisma
+   pnpm seed         # sample content, generated placeholder images and the admin account
+   ```
+
+3. Run it: `pnpm dev`, then open http://localhost:3000 and http://localhost:3000/admin.
+
+`pnpm seed --reset` wipes site content (pages, media, collections, leads, bookings — not admin users) and seeds again.
+
+## Data model
+
+The data contract lives in `src/prisma/contract.prisma`. After editing it:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm contract:emit   # regenerate contract.json / contract.d.ts
+pnpm db:update       # apply to a development database
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+For production, plan and apply migrations with `pnpm prisma migration plan --name <slug>` and `pnpm prisma db migrate`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Media library
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+All files are stored in MongoDB GridFS (`media_files` bucket) and served from `/api/media/:fileId/:name`, so only the database is needed — no separate file storage. Every place that shows an image stores a `{ mediaId, alt }` reference, so one file can be reused with a different alt text in each spot. Replacing a file in the library updates it everywhere.
 
-## Learn More
+## Launch phases
 
-To learn more about Next.js, take a look at the following resources:
+The dashboard has a one-click **Switch to Phase 2** button. Phase 2 unhides “Find a Beauty Pro” and “Book a Tour”, opens the booking calendar and changes every site-wide CTA to “Book a Tour”. Pages, sections, menu links and the announcement bar can each be limited to one phase.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Email
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Set the `SMTP_*` variables to send the VIP welcome email, tour confirmations and owner alerts. Without them, emails are skipped and logged; templates are edited in Admin → Settings → Emails.

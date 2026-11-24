@@ -1,0 +1,159 @@
+// use prisma-8
+
+// A reference from any place on the site to one item in the media library.
+// Each usage carries its own alt text, so the same image can be reused with
+// a different description everywhere it appears.
+type MediaRef {
+  mediaId String
+  alt     String
+}
+
+model AdminUser {
+  id           ObjectId  @id @map("_id")
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @onCreate(now())
+  updatedAt    DateTime  @onCreate(now()) @onUpdate(now())
+  @@map("admin_users")
+}
+
+model Media {
+  id           ObjectId @id @map("_id")
+  // "cloudinary" or "database" (GridFS). Missing on files stored before Cloudinary support.
+  provider     String?
+  // Cloudinary asset details; empty for files in GridFS.
+  publicId     String?
+  resourceType String?
+  url          String?
+  // GridFS file id; empty for Cloudinary files.
+  fileId       String
+  filename     String
+  originalName String
+  mimeType     String
+  kind         String
+  size         Int
+  width        Int?
+  height       Int?
+  blurDataUrl  String?
+  title        String
+  defaultAlt   String
+  tags         String[]
+  createdAt    DateTime @onCreate(now())
+  updatedAt    DateTime @onCreate(now()) @onUpdate(now())
+  @@map("media")
+}
+
+model Page {
+  id             ObjectId  @id @map("_id")
+  slug           String    @unique
+  title          String
+  status         String
+  availability   String
+  sections       Json
+  seoTitle       String
+  seoDescription String
+  ogImage        MediaRef?
+  noIndex        Boolean
+  order          Int
+  createdAt      DateTime  @onCreate(now())
+  updatedAt      DateTime  @onCreate(now()) @onUpdate(now())
+  @@map("pages")
+}
+
+model Setting {
+  id        ObjectId @id @map("_id")
+  key       String   @unique
+  data      Json
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+  @@map("settings")
+}
+
+model Milestone {
+  id         ObjectId   @id @map("_id")
+  title      String
+  dateLabel  String
+  status     String
+  caption    String
+  gallery    MediaRef[]
+  order      Int
+  createdAt  DateTime   @onCreate(now())
+  updatedAt  DateTime   @onCreate(now()) @onUpdate(now())
+  @@map("milestones")
+}
+
+model Suite {
+  id          ObjectId   @id @map("_id")
+  name        String
+  size        String
+  wetDry      String
+  count       Int
+  available   Int
+  sqft        String
+  priceLabel  String
+  summary     String
+  description String
+  features    String[]
+  image       MediaRef?
+  gallery     MediaRef[]
+  published   Boolean
+  order       Int
+  createdAt   DateTime   @onCreate(now())
+  updatedAt   DateTime   @onCreate(now()) @onUpdate(now())
+  @@map("suites")
+}
+
+model Member {
+  id           ObjectId  @id @map("_id")
+  name         String
+  businessName String
+  suiteNumber  String
+  specialty    String
+  headshot     MediaRef?
+  bio          String
+  instagram    String
+  bookingUrl   String
+  published    Boolean
+  featured     Boolean
+  order        Int
+  createdAt    DateTime  @onCreate(now())
+  updatedAt    DateTime  @onCreate(now()) @onUpdate(now())
+  @@map("members")
+}
+
+model Lead {
+  id          ObjectId @id @map("_id")
+  name        String
+  phone       String
+  email       String
+  specialty   String
+  suiteSize   String
+  suiteType   String
+  moveIn      String
+  message     String
+  status      String
+  notes       String
+  emailStatus String
+  createdAt   DateTime @onCreate(now())
+  updatedAt   DateTime @onCreate(now()) @onUpdate(now())
+  @@map("leads")
+}
+
+model Booking {
+  id          ObjectId @id @map("_id")
+  name        String
+  email       String
+  phone       String
+  specialty   String
+  date        String
+  time        String
+  notes       String
+  status      String
+  emailStatus String
+  createdAt   DateTime @onCreate(now())
+  updatedAt   DateTime @onCreate(now()) @onUpdate(now())
+  @@map("bookings")
+}
+

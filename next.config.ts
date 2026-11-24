@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  serverExternalPackages: ["mongoose", "sharp"],
+  images: {
+    // Media is served from MongoDB GridFS through /api/media/:id
+    localPatterns: [{ pathname: "/api/media/**" }],
+    formats: ["image/avif", "image/webp"],
+  },
   turbopack: {
     rules: {
       "*.css": {
